@@ -7,7 +7,7 @@ class MarketDataAPI(ABC):
     """Abstract API Class to get market data."""
     def __init__(self, delta_timezone: int) -> None:
         self.delta_timezone = delta_timezone
-        self.dataframe_columns = ["Open", "High", "Low", "Close", "Volume", "Trades"]
+        self.dataframe_columns = ["Open", "High", "Low", "Close", "Volume", "Trades", "Spread"]
 
     @abstractmethod
     def create_dataframe_from_bars(self, symbol: str, timeframe: str, start_position: int, bars: int) -> DataFrame or None:

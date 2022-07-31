@@ -32,14 +32,16 @@ class MetaTrader5API(MarketDataAPI):
                                   "low": "Low",
                                   "close": "Close",
                                   "tick_volume": "Trades",
-                                  "real_volume": "Volume"}, inplace=True)
+                                  "real_volume": "Volume",
+                                  "spread": "Spread"}, inplace=True)
         dataframe = dataframe.astype({
             "Open": np.float64,
             "High": np.float64,
             "Low": np.float64,
             "Close": np.float64,
             "Volume": np.int64,
-            "Trades": np.int64
+            "Trades": np.int64,
+            "Spread": np.int64
         })
         digits = mt5.symbol_info(symbol).digits
         dataframe['Close'] = round(dataframe['Close'], digits)
