@@ -46,7 +46,6 @@ class MetaTrader5API(MarketDataAPI):
         digits = mt5.symbol_info(symbol).digits
         dataframe['Close'] = round(dataframe['Close'], digits)
         del dataframe["Date"]
-        del dataframe["spread"]
         return dataframe
 
     def _switch_timeframe(self, timeframe: str) -> str or int or None:
