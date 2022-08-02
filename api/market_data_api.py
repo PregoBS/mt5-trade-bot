@@ -10,6 +10,16 @@ class MarketDataAPI(ABC):
         self.dataframe_columns = ["Open", "High", "Low", "Close", "Volume", "Trades", "Spread"]
 
     @abstractmethod
+    def connect(self) -> bool:
+        """Connect to the API and return true if it was successful"""
+        pass
+
+    @abstractmethod
+    def shutdown(self) -> bool:
+        """Disconnect from the API and return true if it was successful"""
+        pass
+
+    @abstractmethod
     def create_dataframe_from_bars(self, symbol: str, timeframe: str, start_position: int, bars: int) -> DataFrame or None:
         """Create a pandas DataFrame for a given symbol and timeframe based on the number of bars."""
         pass
