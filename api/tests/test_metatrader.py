@@ -1,23 +1,39 @@
+from api.market_data_api import MarketDataAPI
 from api.metatrader import MetaTrader5API, TimeFrame
 from datetime import datetime, timedelta
+import pytest
 
 
-api = MetaTrader5API(delta_timezone=-5)
-today = datetime.today()
-symbol = "EURUSD"
-bars = 30
+@pytest.fixture
+def api() -> MarketDataAPI:
+    return MetaTrader5API(delta_timezone=-5)
 
 
-def test_connect() -> None:
+@pytest.fixture
+def today() -> datetime:
+    return datetime.today()
+
+
+@pytest.fixture
+def symbol() -> str:
+    return "EURUSD"
+
+
+@pytest.fixture
+def bars() -> int:
+    return 30
+
+
+def test_connect(api: MarketDataAPI) -> None:
     assert api.connect() is True
 
 
-def test_shutdown() -> None:
+def test_shutdown(api: MarketDataAPI) -> None:
     assert api.connect() is True
     assert api.shutdown() is True
 
 
-def test_create_dataframe_from_bars() -> None:
+def test_create_dataframe_from_bars(api: MarketDataAPI, symbol: str, bars: int) -> None:
     assert api.connect() is True
     dataframe = api.create_dataframe_from_bars(symbol, TimeFrame.M5, 0, bars)
     assert dataframe is not None
@@ -25,14 +41,14 @@ def test_create_dataframe_from_bars() -> None:
     assert api.shutdown() is True
 
 
-def test_do_not_create_dataframe_from_bars() -> None:
+def test_do_not_create_dataframe_from_bars(api: MarketDataAPI, symbol: str, bars: int) -> None:
     assert api.connect() is True
     dataframe = api.create_dataframe_from_bars("invalid-symbol", TimeFrame.M5, 0, bars)
     assert dataframe is None
     assert api.shutdown() is True
 
 
-def test_create_dataframe_from_date() -> None:
+def test_create_dataframe_from_date(api: MarketDataAPI, symbol: str, bars: int, today: datetime) -> None:
     assert api.connect() is True
     dataframe = api.create_dataframe_from_date(symbol, TimeFrame.D1, today - timedelta(days=bars), today)
     assert dataframe is not None
@@ -42,14 +58,14 @@ def test_create_dataframe_from_date() -> None:
     assert api.shutdown() is True
 
 
-def test_do_not_create_dataframe_from_date() -> None:
+def test_do_not_create_dataframe_from_date(api: MarketDataAPI, symbol: str, bars: int, today: datetime) -> None:
     assert api.connect() is True
     dataframe = api.create_dataframe_from_date("invalid-symbol", TimeFrame.M5, today - timedelta(days=bars), today)
     assert dataframe is None
     assert api.shutdown() is True
 
 
-def test_standardize_dataframe() -> None:
+def test_standardize_dataframe(api: MarketDataAPI, symbol: str, bars: int) -> None:
     assert api.connect() is True
     dataframe = api.create_dataframe_from_bars(symbol, TimeFrame.M5, 0, bars)
     assert dataframe is not None

@@ -20,12 +20,12 @@ class MarketDataAPI(ABC):
         pass
 
     @abstractmethod
-    def create_dataframe_from_bars(self, symbol: str, timeframe: str, start_position: int, bars: int) -> DataFrame or None:
+    def create_dataframe_from_bars(self, symbol: str, timeframe: str or int, start_position: int, bars: int) -> DataFrame or None:
         """Create a pandas DataFrame for a given symbol and timeframe based on the number of bars."""
         pass
 
     @abstractmethod
-    def create_dataframe_from_date(self, symbol: str, timeframe: str, start_date: datetime, end_date: datetime) -> DataFrame or None:
+    def create_dataframe_from_date(self, symbol: str, timeframe: str or int, start_date: datetime, end_date: datetime) -> DataFrame or None:
         """Create a pandas DataFrame for a given symbol and timeframe between two date times."""
         pass
 

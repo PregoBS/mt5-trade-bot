@@ -1,10 +1,10 @@
 from api.market_data_api import MarketDataAPI
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 from enum import Enum
 import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
-from dotenv import load_dotenv
 import os
 
 
