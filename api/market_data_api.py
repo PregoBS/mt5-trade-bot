@@ -10,7 +10,7 @@ class MarketDataAPI(ABC):
         self.dataframe_columns = ["Open", "High", "Low", "Close", "Volume", "Trades", "Spread"]
 
     @abstractmethod
-    def connect(self, initialization_args: dict) -> bool:
+    def connect(self) -> bool:
         """Connect to the API and return true if it was successful"""
         pass
 
