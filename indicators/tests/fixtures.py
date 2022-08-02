@@ -1,11 +1,9 @@
 from api.market_data_api import MarketDataAPI
 import numpy as np
 import pandas as pd
-import pytest
 
 
-@pytest.fixture
-def dataframe() -> pd.DataFrame:
+def btc_dataframe() -> pd.DataFrame:
     index = np.array([
         '2022-08-01T20:00:00.000000000',
         '2022-08-01T21:00:00.000000000',
