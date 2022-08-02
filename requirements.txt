@@ -1,4 +1,5 @@
 MetaTrader5
 numpy
 pandas
+pytest
 python-dotenv
