@@ -6,7 +6,7 @@ import pytest
 
 @pytest.fixture
 def api() -> MarketDataAPI:
-    return MetaTrader5API(delta_timezone=-5)
+    return MetaTrader5API(delta_timezone=-6)
 
 
 @pytest.fixture
