@@ -33,11 +33,3 @@ class MarketDataAPI(ABC):
     def _standardize_dataframe(self, dataframe: DataFrame, symbol: str) -> DataFrame:
         """Return the dataframe with standard column names"""
         pass
-
-    @abstractmethod
-    def _switch_timeframe(self, timeframe: str) -> str or int or None:
-        """Switch the timeframe string to a value that the API read"""
-        pass
-
-    def _validate_dataframe(self, dataframe: DataFrame) -> bool:
-        return dataframe.columns == self.dataframe_columns
