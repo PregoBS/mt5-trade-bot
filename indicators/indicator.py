@@ -7,5 +7,6 @@ class Indicator(ABC):
     def __init__(self, name: str) -> None:
         self.name = name
 
+    @abstractmethod
     def calculate(self, dataframe: DataFrame) -> DataFrame:
         pass
