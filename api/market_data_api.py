@@ -4,7 +4,7 @@ from pandas import DataFrame
 
 
 class MarketDataAPI(ABC):
-    DATAFRAME_COLUMNS = ["Open", "High", "Low", "Close", "Volume", "Trades", "Spread"].sort()
+    DATAFRAME_COLUMNS = ["Open", "High", "Low", "Close", "Volume", "Trades", "Spread"]
 
     """Abstract API Class to get market data."""
     def __init__(self, delta_timezone: int) -> None:
