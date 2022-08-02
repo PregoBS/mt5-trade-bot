@@ -69,5 +69,5 @@ def test_standardize_dataframe(api: MarketDataAPI, symbol: str, bars: int) -> No
     assert api.connect() is True
     dataframe = api.create_dataframe_from_bars(symbol, TimeFrame.M5, 0, bars)
     assert dataframe is not None
-    assert dataframe.columns.to_list().sort() == api.dataframe_columns.sort()
+    assert dataframe.columns.to_list().sort() == MarketDataAPI.DATAFRAME_COLUMNS
     assert api.shutdown() is True

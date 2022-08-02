@@ -4,10 +4,11 @@ from pandas import DataFrame
 
 
 class MarketDataAPI(ABC):
+    DATAFRAME_COLUMNS = ["Open", "High", "Low", "Close", "Volume", "Trades", "Spread"].sort()
+
     """Abstract API Class to get market data."""
     def __init__(self, delta_timezone: int) -> None:
         self.delta_timezone = delta_timezone
-        self.dataframe_columns = ["Open", "High", "Low", "Close", "Volume", "Trades", "Spread"]
 
     @abstractmethod
     def connect(self) -> bool:
