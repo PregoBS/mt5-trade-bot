@@ -1,4 +1,4 @@
-from .fixtures import btc_dataframe
+from .mock_data import btc_dataframe
 from indicators.ema import EMA
 from pandas import DataFrame
 import pytest
