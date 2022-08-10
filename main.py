@@ -34,8 +34,8 @@ def create_indicators_manager_with_indicators() -> indicators.Manager:
     return manager
 
 
-def create_dataframe_with_indicators(api_: api.MarketDataAPI, symbol: str, timeframe: int, bars: int) -> pd.DataFrame:
-    df = api_.create_dataframe_from_bars(symbol, timeframe, 0, bars)
+def create_dataframe_with_indicators(_api: api.MarketDataAPI, symbol: str, timeframe: int, bars: int) -> pd.DataFrame:
+    df = _api.create_dataframe_from_bars(symbol, timeframe, 0, bars)
     indic_mgr = create_indicators_manager_with_indicators()
     return indic_mgr.calculate_all(df)
 
