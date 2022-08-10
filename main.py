@@ -26,6 +26,20 @@ def api_disconnect(_api: api.MarketDataAPI) -> None:
     return
 
 
+def create_indicators_manager_with_indicators() -> indicators.Manager:
+    manager = indicators.Manager()
+    manager.add(indicators.EMA("EMA17", 17))
+    manager.add(indicators.EMA("EMA34", 34))
+    manager.add(indicators.EMA("EMA72", 72))
+    return manager
+
+
+def create_dataframe_with_indicators(api_: api.MarketDataAPI, symbol: str, timeframe: int, bars: int) -> pd.DataFrame:
+    df = api_.create_dataframe_from_bars(symbol, timeframe, 0, bars)
+    indic_mgr = create_indicators_manager_with_indicators()
+    return indic_mgr.calculate_all(df)
+
+
 def main() -> None:
     # CREATE API CONNECTION
     mt5api = api_connection(api.MetaTrader5API(delta_timezone=-6))
@@ -37,20 +51,7 @@ def main() -> None:
     # ----- LIKE PLACED ORDERS, OPENED POSITIONS, CLOSED POSITIONS
     # ---------------------------------------------------------------------------
 
-    # EXTRACT DATA AS A PANDAS DATAFRAME
-    dataframe = mt5api.create_dataframe_from_bars("BTCUSD", mt5api.TIMEFRAME.H1, 0, 100)
-    print(dataframe.tail(3))
-    # ---------------------------------------------------------------------------
-
-    # ADDING INDICATORS
-    indicators_manager = indicators.Manager()
-    indicators_manager.add(indicators.EMA("EMA17", 17))
-    indicators_manager.add(indicators.EMA("EMA34", 34))
-    indicators_manager.add(indicators.EMA("EMA72", 72))
-    # ---------------------------------------------------------------------------
-
-    # COMPUTING ALL INDICATORS
-    dataframe = indicators_manager.calculate_all(dataframe)
+    dataframe = create_dataframe_with_indicators(mt5api, "BTCUSD", mt5api.TIMEFRAME.H1, 100)
     print(dataframe.tail(3))
     # ---------------------------------------------------------------------------
 
