@@ -12,7 +12,7 @@ def main():
     mt5api = api.MetaTrader5API(delta_timezone=-6)
     assert mt5api.connect()
     # EXTRACT DATA AS A PANDAS DATAFRAME
-    dataframe = mt5api.create_dataframe_from_bars("BTCUSD", api.TimeFrame.H1, 0, 100)
+    dataframe = mt5api.create_dataframe_from_bars("BTCUSD", mt5api.TIMEFRAME.H1, 0, 100)
     print(dataframe.tail(3))
     # ADDING INDICATORS
     indicators_manager = indicators.Manager()

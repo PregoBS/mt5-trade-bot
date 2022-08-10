@@ -1,11 +1,24 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import datetime
 from pandas import DataFrame
 
 
+@dataclass
+class TimeFrame:
+    M1: int or str
+    M5: int or str
+    M15: int or str
+    H1: int or str
+    H4: int or str
+    D1: int or str
+    W1: int or str
+    MN1: int or str
+
+
 class MarketDataAPI(ABC):
     DATAFRAME_COLUMNS = ["Open", "High", "Low", "Close", "Volume", "Trades", "Spread"]
-
+    TIMEFRAME: TimeFrame
     """Abstract API Class to get market data."""
     def __init__(self, delta_timezone: int) -> None:
         self.delta_timezone = delta_timezone

@@ -1,1 +1,1 @@
-from metatrader import MetaTrader5API, TimeFrame
+from api.metatrader import MetaTrader5API
