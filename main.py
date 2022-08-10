@@ -1,5 +1,4 @@
-from api.market_data_api import MarketDataAPI
-from api.metatrader import MetaTrader5API, TimeFrame
+import api
 import indicators
 import pandas as pd
 import numpy as np
@@ -10,10 +9,10 @@ pd.set_option('display.width', 1500)      # largura máxima da tabela
 
 def main():
     # CREATE META TRADER 5 API CONNECTION
-    api = MetaTrader5API(delta_timezone=-6)
-    assert api.connect()
+    mt5api = api.MetaTrader5API(delta_timezone=-6)
+    assert mt5api.connect()
     # EXTRACT DATA AS A PANDAS DATAFRAME
-    dataframe = api.create_dataframe_from_bars("BTCUSD", TimeFrame.H1, 0, 100)
+    dataframe = mt5api.create_dataframe_from_bars("BTCUSD", api.TimeFrame.H1, 0, 100)
     print(dataframe.tail(3))
     # ADDING INDICATORS
     indicators_manager = indicators.Manager()
