@@ -1,6 +1,6 @@
 from api.market_data_api import MarketDataAPI
 from api.metatrader import MetaTrader5API, TimeFrame
-from indicators.ema import EMA
+import indicators
 import pandas as pd
 import numpy as np
 
@@ -14,11 +14,11 @@ def main():
     dataframe = api.create_dataframe_from_bars("BTCUSD", TimeFrame.H1, 0, 100)
     print(dataframe.tail(3))
     print()
-    ema17 = EMA("EMA17", 17)
+    ema17 = indicators.EMA("EMA17", 17)
+    ema34 = indicators.EMA("EMA34", 34)
+    ema72 = indicators.EMA("EMA72", 72)
     dataframe = ema17.calculate(dataframe)
-    ema34 = EMA("EMA34", 34)
     dataframe = ema34.calculate(dataframe)
-    ema72 = EMA("EMA72", 72)
     dataframe = ema72.calculate(dataframe)
     print(dataframe.tail(3))
 
