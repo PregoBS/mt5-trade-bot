@@ -9,17 +9,18 @@ pd.set_option('display.width', 1500)      # largura máxima da tabela
 
 
 def main():
+    # CREATE META TRADER 5 API CONNECTION
     api = MetaTrader5API(delta_timezone=-6)
     assert api.connect()
+    # EXTRACT DATA AS A PANDAS DATAFRAME
     dataframe = api.create_dataframe_from_bars("BTCUSD", TimeFrame.H1, 0, 100)
     print(dataframe.tail(3))
-    print()
-    ema17 = indicators.EMA("EMA17", 17)
-    ema34 = indicators.EMA("EMA34", 34)
-    ema72 = indicators.EMA("EMA72", 72)
-    dataframe = ema17.calculate(dataframe)
-    dataframe = ema34.calculate(dataframe)
-    dataframe = ema72.calculate(dataframe)
+    # ADDING INDICATORS
+    indicators_manager = indicators.Manager()
+    indicators_manager.add(indicators.EMA("EMA17", 17))
+    indicators_manager.add(indicators.EMA("EMA34", 34))
+    indicators_manager.add(indicators.EMA("EMA72", 72))
+    dataframe = indicators_manager.calculate_all(dataframe)
     print(dataframe.tail(3))
 
 
