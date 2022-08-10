@@ -65,7 +65,8 @@ def main() -> None:
     # ADDING STRATEGIES - TODO 3
     # -- THE STRATEGY MUST BE A SUBJECT OF THE STRATEGY MANAGER
     # -- THE STRATEGY IS A SINGLE SIGNAL OR A COMBINATION OF SIGNALS INTERPRETED AS:
-    # ----- BUY EVENT | SELL EVENT | NOTHING TO DO | UPDATE STOPLOSS (TRAILING STOP) | CLOSE TRADE AT MARKET
+    # ----- BUY EVENT | SELL EVENT
+    # ----- UPDATE STOPLOSS (TRAILING STOP) | CLOSE TRADE AT MARKET
     # ---------------------------------------------------------------------------
 
     # COMPUTING STRATEGIES - TODO 4
@@ -74,8 +75,9 @@ def main() -> None:
     # ---------------------------------------------------------------------------
 
     # CREATE THE TRADE BOT - TODO 6
-    # -- THE TRADE BOT MUST BE A OBSERVER OF THE STRATEGY MANAGER
     # -- THE TRADE BOT MUST BE A OBSERVER OF THE ACCOUNT MANAGER
+    # -- THE TRADE BOT MUST BE A OBSERVER OF THE STRATEGY MANAGER
+    # -- THE TRADE BOT MUST BE A SUBJECT FOR THE TRADE RESULTS
     # ----- IT WILL EXECUTE THE TRADES AS THE STRATEGY MANAGER UPDATES ITS STATE
     # ---------------------------------------------------------------------------
 
