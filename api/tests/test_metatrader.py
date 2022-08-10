@@ -1,5 +1,5 @@
 from api.market_data_api import MarketDataAPI
-from api.metatrader import MetaTrader5API, TimeFrame
+from api.metatrader import MetaTrader5API
 from datetime import datetime, timedelta
 import pytest
 
@@ -35,7 +35,7 @@ def test_shutdown(api: MarketDataAPI) -> None:
 
 def test_create_dataframe_from_bars(api: MarketDataAPI, symbol: str, bars: int) -> None:
     assert api.connect() is True
-    dataframe = api.create_dataframe_from_bars(symbol, TimeFrame.M5, 0, bars)
+    dataframe = api.create_dataframe_from_bars(symbol, api.TIMEFRAME.M5, 0, bars)
     assert dataframe is not None
     assert len(dataframe) == bars
     assert api.shutdown() is True
@@ -43,14 +43,14 @@ def test_create_dataframe_from_bars(api: MarketDataAPI, symbol: str, bars: int) 
 
 def test_do_not_create_dataframe_from_bars(api: MarketDataAPI, symbol: str, bars: int) -> None:
     assert api.connect() is True
-    dataframe = api.create_dataframe_from_bars("invalid-symbol", TimeFrame.M5, 0, bars)
+    dataframe = api.create_dataframe_from_bars("invalid-symbol", api.TIMEFRAME.M5, 0, bars)
     assert dataframe is None
     assert api.shutdown() is True
 
 
 def test_create_dataframe_from_date(api: MarketDataAPI, symbol: str, bars: int, today: datetime) -> None:
     assert api.connect() is True
-    dataframe = api.create_dataframe_from_date(symbol, TimeFrame.D1, today - timedelta(days=bars), today)
+    dataframe = api.create_dataframe_from_date(symbol, api.TIMEFRAME.D1, today - timedelta(days=bars), today)
     assert dataframe is not None
     # Weekends or holidays may not have data
     # The dataframe length should be smaller than the timedelta
@@ -60,14 +60,14 @@ def test_create_dataframe_from_date(api: MarketDataAPI, symbol: str, bars: int, 
 
 def test_do_not_create_dataframe_from_date(api: MarketDataAPI, symbol: str, bars: int, today: datetime) -> None:
     assert api.connect() is True
-    dataframe = api.create_dataframe_from_date("invalid-symbol", TimeFrame.M5, today - timedelta(days=bars), today)
+    dataframe = api.create_dataframe_from_date("invalid-symbol", api.TIMEFRAME.M5, today - timedelta(days=bars), today)
     assert dataframe is None
     assert api.shutdown() is True
 
 
 def test_standardize_dataframe(api: MarketDataAPI, symbol: str, bars: int) -> None:
     assert api.connect() is True
-    dataframe = api.create_dataframe_from_bars(symbol, TimeFrame.M5, 0, bars)
+    dataframe = api.create_dataframe_from_bars(symbol, api.TIMEFRAME.M5, 0, bars)
     assert dataframe is not None
     assert dataframe.columns.to_list().sort() == MarketDataAPI.DATAFRAME_COLUMNS.sort()
     assert api.shutdown() is True

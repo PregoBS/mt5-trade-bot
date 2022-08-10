@@ -19,6 +19,7 @@ def main():
     indicators_manager.add(indicators.EMA("EMA17", 17))
     indicators_manager.add(indicators.EMA("EMA34", 34))
     indicators_manager.add(indicators.EMA("EMA72", 72))
+    # COMPUTING ALL INDICATORS
     dataframe = indicators_manager.calculate_all(dataframe)
     print(dataframe.tail(3))
 
