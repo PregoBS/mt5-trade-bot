@@ -40,16 +40,18 @@ class MetaTrader5API(MarketDataAPI):
         """MT5 connection shutdown"""
         return mt5.shutdown()
 
-    def create_dataframe_from_bars(self, symbol: str, timeframe: int, start_position: int,
+    def create_dataframe_from_bars(self, symbol: str, timeframe: str, start_position: int,
                                    bars: int) -> pd.DataFrame or None:
-        dataframe = pd.DataFrame(mt5.copy_rates_from_pos(symbol, timeframe, start_position, bars))
+        tf = self.TIMEFRAME.__getattribute__(timeframe)
+        dataframe = pd.DataFrame(mt5.copy_rates_from_pos(symbol, tf, start_position, bars))
         if not dataframe.empty:
             return self._standardize_dataframe(dataframe, symbol)
         return None
 
-    def create_dataframe_from_date(self, symbol: str, timeframe: int, start_date: datetime,
+    def create_dataframe_from_date(self, symbol: str, timeframe: str, start_date: datetime,
                                    end_date: datetime) -> pd.DataFrame or None:
-        dataframe = pd.DataFrame(mt5.copy_rates_range(symbol, timeframe, start_date, end_date))
+        tf = self.TIMEFRAME.__getattribute__(timeframe)
+        dataframe = pd.DataFrame(mt5.copy_rates_range(symbol, tf, start_date, end_date))
         if not dataframe.empty:
             return self._standardize_dataframe(dataframe, symbol)
         return None
