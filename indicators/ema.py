@@ -11,6 +11,6 @@ class EMA(Indicator):
         return self._ema(dataframe)
 
     def _ema(self, dataframe: pd.DataFrame) -> pd.DataFrame:
-        dataframe["EMA" + str(self.period)] = dataframe["Close"].ewm(span=self.period, min_periods=self.period).mean()
+        dataframe[self.name] = dataframe["Close"].ewm(span=self.period, min_periods=self.period).mean()
         dataframe = dataframe.fillna(method="bfill")
         return dataframe

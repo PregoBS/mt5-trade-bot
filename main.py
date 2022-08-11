@@ -31,6 +31,7 @@ def create_indicators_manager_with_indicators() -> indicators.Manager:
     manager.add(indicators.EMA("EMA17", 17))
     manager.add(indicators.EMA("EMA34", 34))
     manager.add(indicators.EMA("EMA72", 72))
+    manager.add(indicators.EMACrossover("EMACrossover17_34", 17, 34))
     return manager
 
 
