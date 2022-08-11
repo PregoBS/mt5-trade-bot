@@ -8,7 +8,7 @@ class SignalObj:
     name: str
     symbol: str
     timeframe: str
-    signal: int
+    value: int
 
 
 class Signal(ABC):

@@ -16,5 +16,5 @@ class EMACrossover(Signal):
             name=self.name,
             symbol=symbol,
             timeframe=timeframe,
-            signal=signal
+            value=signal
         )

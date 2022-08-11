@@ -19,9 +19,8 @@ def test_get_signals_results(dataframe: DataFrame):
     signals_manager = signals.Manager()
     signals_manager.add(signals.EMACrossover("EMACrossover", "EMACrossover_17_34"))
     results = signals_manager.get_results("BTCUSD", "M5", dataframe)
-    assert len(results.keys()) == 1
-    assert "EMACrossover" in results.keys()
-    assert results["EMACrossover"].name == "EMACrossover"
-    assert results["EMACrossover"].symbol == "BTCUSD"
-    assert results["EMACrossover"].timeframe == "M5"
-    assert results["EMACrossover"].signal == 0
+    assert len(results) == 1
+    assert results[0].name == "EMACrossover"
+    assert results[0].symbol == "BTCUSD"
+    assert results[0].timeframe == "M5"
+    assert results[0].value == 0
