@@ -3,7 +3,10 @@ import indicators
 import pandas as pd
 import numpy as np
 import signals
+from signals.signal import SignalObj
 import sys
+from typing import List
+
 
 pd.set_option('display.max_columns', 500)  # número de colunas
 pd.set_option('display.width', 1500)      # largura máxima da tabela
@@ -48,7 +51,7 @@ def create_signals_manager_with_signals() -> signals.Manager:
     return manager
 
 
-def create_signals_results(symbol: str, timeframe: str, dataframe: pd.DataFrame) -> dict:
+def create_signals_results(symbol: str, timeframe: str, dataframe: pd.DataFrame) -> List[SignalObj]:
     signals_manager = create_signals_manager_with_signals()
     return signals_manager.get_results(symbol, timeframe, dataframe)
 
@@ -77,6 +80,7 @@ def main(symbol: str, timeframe: str) -> None:
     # -- THE STRATEGY IS A SINGLE SIGNAL OR A COMBINATION OF SIGNALS INTERPRETED AS:
     # ----- BUY EVENT | SELL EVENT
     # ----- UPDATE STOPLOSS (TRAILING STOP) | CLOSE TRADE AT MARKET
+
     # ---------------------------------------------------------------------------
 
     # COMPUTING STRATEGIES - TODO 4
