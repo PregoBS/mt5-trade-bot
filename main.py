@@ -2,6 +2,7 @@ import api
 import indicators
 import pandas as pd
 import numpy as np
+import signals
 import sys
 
 pd.set_option('display.max_columns', 500)  # número de colunas
@@ -36,12 +37,23 @@ def create_indicators_manager_with_indicators() -> indicators.Manager:
 
 
 def create_dataframe_with_indicators(_api: api.MarketDataAPI, symbol: str, timeframe: str, bars: int) -> pd.DataFrame:
-    df = _api.create_dataframe_from_bars(symbol, timeframe, 0, bars)
+    df = _api.create_dataframe_from_bars(symbol, timeframe, 12, bars)
     indicators_manager = create_indicators_manager_with_indicators()
     return indicators_manager.calculate_all(df)
 
 
-def main() -> None:
+def create_signals_manager_with_signals() -> signals.Manager:
+    manager = signals.Manager()
+    manager.add(signals.EMACrossover("EMACrossover", "EMACrossover17_34"))
+    return manager
+
+
+def create_signals_results(symbol: str, timeframe: str, dataframe: pd.DataFrame) -> dict:
+    signals_manager = create_signals_manager_with_signals()
+    return signals_manager.get_results(symbol, timeframe, dataframe)
+
+
+def main(symbol: str, timeframe: str) -> None:
     # CREATE API CONNECTION
     mt5api = api_connection(api.MetaTrader5API(delta_timezone=-6))
     # ---------------------------------------------------------------------------
@@ -52,16 +64,12 @@ def main() -> None:
     # ----- LIKE PLACED ORDERS, OPENED POSITIONS, CLOSED POSITIONS
     # ---------------------------------------------------------------------------
 
-    dataframe = create_dataframe_with_indicators(mt5api, "BTCUSD", "H1", 100)
-    print(dataframe.tail(3))
+    dataframe = create_dataframe_with_indicators(mt5api, symbol, timeframe, 100)
+    print(dataframe.tail(3), end="\n\n")
     # ---------------------------------------------------------------------------
 
-    # ADDING SIGNALS - TODO 1
-    # -- SIGNAL IS A SINGLE INDICATOR OR A COMBINATION OF INDICATORS INTERPRETED AS:
-    # ----- BUY MOVEMENT SIGNAL: 1 | SELL MOVEMENT SIGNAL: -1 | NOTHING HAPPENING: 0
-    # ---------------------------------------------------------------------------
-
-    # COMPUTING SIGNALS - TODO 2
+    signals_results = create_signals_results(symbol, timeframe, dataframe)
+    print(signals_results)
     # ---------------------------------------------------------------------------
 
     # ADDING STRATEGIES - TODO 3
@@ -91,4 +99,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main("BTCUSD", "D1")
