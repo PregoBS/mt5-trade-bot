@@ -9,7 +9,14 @@ def dataframe() -> DataFrame:
     return btc_dataframe()
 
 
-def test_add_indicator(dataframe: DataFrame):
+def test_add_indicator():
+    indicators_manager = indicators.Manager()
+    indicators_manager.add(indicators.EMA("EMA17", 17))
+    indicators_manager.add(indicators.EMA("EMA72", 72))
+    assert len(indicators_manager.indicators) == 2
+
+
+def test_calculate_all_indicators(dataframe: DataFrame):
     indicators_manager = indicators.Manager()
     indicators_manager.add(indicators.EMA("EMA17", 17))
     indicators_manager.add(indicators.EMA("EMA72", 72))
