@@ -18,7 +18,7 @@ class EMACrossover(Indicator):
             dataframe[f"EMA{self.slow}_Shift"] = dataframe[f"EMA{self.slow}"].shift()
         except KeyError:
             print("Indicator not in dataframe, first compute the Fast and Slow EMA's")
-            return dataframe
+            raise KeyError
 
         conditon1_up = dataframe[f"EMA{self.fast}"].to_numpy() > dataframe[f"EMA{self.slow}"].to_numpy()
         conditon2_up = dataframe[f"EMA{self.fast}_Shift"].to_numpy() < dataframe[f"EMA{self.slow}_Shift"].to_numpy()
