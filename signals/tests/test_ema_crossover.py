@@ -13,6 +13,7 @@ def test_get_signal(dataframe: DataFrame) -> None:
     # Exponential Moving Average Crossover Signal
     ema_crossover = EMACrossover("EMACrossover", "EMACrossover_17_34")
     signal = ema_crossover.get_signal("BTCUSD", "M5", dataframe)
+    print(dataframe)
     assert signal.name == "EMACrossover"
     assert signal.symbol == "BTCUSD"
     assert signal.timeframe == "M5"

@@ -48,8 +48,9 @@ def btc_dataframe() -> pd.DataFrame:
         [24735.83, 24882.85, 24434.59, 24573.83, 6523, 0, 632, 24411.04, 24125.87, 0],
         [24577.09, 24593.33, 24300.85, 24373.33, 5963, 0, 632, 24406.85, 24140.05, 0],
     ])
-    columns = MarketDataAPI.DATAFRAME_COLUMNS
+    columns = MarketDataAPI.DATAFRAME_COLUMNS.copy()
     columns.append("EMA17")
     columns.append("EMA34")
     columns.append("EMACrossover_17_34")
-    return pd.DataFrame(data=data, columns=MarketDataAPI.DATAFRAME_COLUMNS, index=index)
+    print(columns)
+    return pd.DataFrame(data=data, columns=columns, index=index)
