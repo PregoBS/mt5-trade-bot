@@ -17,7 +17,7 @@ class TimeFrame:
 
 
 class MarketDataAPI(ABC):
-    DATAFRAME_COLUMNS = ["Open", "High", "Low", "Close", "Volume", "Trades", "Spread"]
+    DATAFRAME_COLUMNS = ["_Digits", "Open", "High", "Low", "Close", "Volume", "Trades", "Spread"]
     TIMEFRAME: TimeFrame
     """Abstract API Class to get market data."""
     def __init__(self, delta_timezone: int) -> None:

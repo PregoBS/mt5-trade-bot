@@ -78,6 +78,10 @@ class MetaTrader5API(MarketDataAPI):
             "Spread": np.int64
         })
         digits = mt5.symbol_info(symbol).digits
-        dataframe['Close'] = round(dataframe['Close'], digits)
+        dataframe["Open"] = round(dataframe["Open"], digits)
+        dataframe["High"] = round(dataframe["High"], digits)
+        dataframe["Low"] = round(dataframe["Low"], digits)
+        dataframe["Close"] = round(dataframe["Close"], digits)
+        dataframe["_Digits"] = digits
         del dataframe["Date"]
         return dataframe
