@@ -1,0 +1,2 @@
+from design_patterns.observer_pattern.observer import Observer
+from design_patterns.observer_pattern.subject import Subject

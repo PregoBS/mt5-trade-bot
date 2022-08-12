@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from design_patterns.observer_pattern.state import State
 
 
 class Observer(ABC):
@@ -7,5 +6,5 @@ class Observer(ABC):
         pass
 
     @abstractmethod
-    def update(self, state: State) -> None:
+    def update(self, state) -> None:
         pass
