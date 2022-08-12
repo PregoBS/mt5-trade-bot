@@ -60,10 +60,17 @@ def create_signals_results(symbol: str, timeframe: str, dataframe: pd.DataFrame)
     return signals_manager.get_results(symbol, timeframe, dataframe)
 
 
+def create_strategy_manager_with_strategies() -> strategies.Manager:
+    manager = strategies.Manager()
+    manager.add(strategies.EMACrossover("EMACrossover"))
+    return manager
+
+
 def main(symbol: str, timeframe: str) -> None:
     # CREATE API CONNECTION
     mt5api = api_connection(api.MetaTrader5API(delta_timezone=-6))
     # ---------------------------------------------------------------------------
+
     # CREATE DATABASE
     db = Database(f"{os.path.dirname(__file__)}/database.db")
     # ---------------------------------------------------------------------------
@@ -87,37 +94,13 @@ def main(symbol: str, timeframe: str) -> None:
     print([s.name for s in signals_results], end="\n\n")
     # ---------------------------------------------------------------------------
 
-    # ADDING STRATEGIES - TODO 3
-    # -- THE STRATEGY MUST BE A SUBJECT OF THE STRATEGY MANAGER
-    # -- THE STRATEGY IS A SINGLE SIGNAL OR A COMBINATION OF SIGNALS INTERPRETED AS:
-    # ----- BUY EVENT | SELL EVENT
-    # ----- UPDATE STOPLOSS (TRAILING STOP) | CLOSE TRADE AT MARKET
     # CREATE STRATEGY MANAGER
-    strategies_manager = strategies.Manager()
-    # ADD STRATEGIES
-    strategies_manager.add(strategies.EMACrossover("EMACrossover"))
-    # SUBSCRIBE THE TRADE BOT FOR ALL STRATEGIES
+    strategies_manager = create_strategy_manager_with_strategies()
     strategies_manager.subscribe_observer(trade_bot)
-    # CHECK ALL STRATEGIES
+    # COMPUTING STRATEGIES
     strategies_manager.verify_all(symbol, timeframe, dataframe, signals_results)
     # ---------------------------------------------------------------------------
 
-    # COMPUTING STRATEGIES - TODO 4
-    # -- THE STRATEGY MANAGER MUST BE A OBSERVER OF EACH STRATEGY
-    # -- THE STRATEGY MANAGER MUST BE A SUBJECT OF THE TRADE BOT
-    # ---------------------------------------------------------------------------
-
-    # CREATE THE TRADE BOT - TODO 6
-    # -- THE TRADE BOT MUST BE A OBSERVER OF THE ACCOUNT MANAGER
-    # -- THE TRADE BOT MUST BE A OBSERVER OF THE STRATEGY MANAGER
-    # -- THE TRADE BOT MUST BE A SUBJECT FOR THE TRADE RESULTS
-    # ----- IT WILL EXECUTE THE TRADES AS THE STRATEGY MANAGER UPDATES ITS STATE
-    # ---------------------------------------------------------------------------
-
-    # CREATE TRADE RESULTS - TODO 7
-    # -- THE TRADE RESULTS MUST BE THE OBSERVER OF THE TRADE BOT
-    # ----- IT WILL STORE ALL TRADE DATA IN DATABASE FOR ANALYSIS
-    # ---------------------------------------------------------------------------
     return api_disconnect(mt5api)
 
 
