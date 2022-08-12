@@ -67,18 +67,12 @@ def create_strategy_manager_with_strategies() -> strategies.Manager:
 
 
 def main(symbol: str, timeframe: str) -> None:
-    # CREATE API CONNECTION
     mt5api = api_connection(api.MetaTrader5API(delta_timezone=-6))
-    # ---------------------------------------------------------------------------
 
-    # CREATE DATABASE
     db = Database(f"{os.path.dirname(__file__)}/database.db")
-    # ---------------------------------------------------------------------------
 
-    # CREATE TRADE BOT
     trade_bot = bot.TradeBot()
     trade_bot.subscribe(db)
-    # ---------------------------------------------------------------------------
 
     # CREATE ACCOUNT MANAGER - TODO 5
     # -- MUST BE A SUBJECT FOR THE TRADE BOT
@@ -88,18 +82,14 @@ def main(symbol: str, timeframe: str) -> None:
 
     dataframe = create_dataframe_with_indicators(mt5api, symbol, timeframe, 100)
     print(dataframe.tail(3), end="\n\n")
-    # ---------------------------------------------------------------------------
 
     signals_results = create_signals_results(symbol, timeframe, dataframe)
     print([s.name for s in signals_results], end="\n\n")
-    # ---------------------------------------------------------------------------
 
-    # CREATE STRATEGY MANAGER
     strategies_manager = create_strategy_manager_with_strategies()
     strategies_manager.subscribe_observer(trade_bot)
-    # COMPUTING STRATEGIES
+
     strategies_manager.verify_all(symbol, timeframe, dataframe, signals_results)
-    # ---------------------------------------------------------------------------
 
     return api_disconnect(mt5api)
 
