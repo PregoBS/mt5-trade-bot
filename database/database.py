@@ -1,8 +1,8 @@
 from dataclasses import dataclass
+from design_patterns.observer_pattern import Observer
 import pandas as pd
 import sqlite3
-from sqlite3 import Cursor, Connection
-from typing import Callable, List
+from sqlite3 import Cursor
 
 
 @dataclass
@@ -50,12 +50,18 @@ class Trade:
     fee: float = 0
 
 
-class Database:
+class Database(Observer):
     def __init__(self, db_path: str) -> None:
+        Observer.__init__(self)
         self.path = db_path
         self._create_table_trades()
         self._create_table_positions()
         self._create_table_orders()
+
+    def update(self, state) -> None:
+        print("DATABASE: Recebendo atualização do Subject")
+        print(state)
+        print("DATABASE: Okay, vou salvar tudo!")
 
     def get_table(self, table_name: str) -> pd.DataFrame:
         with sqlite3.connect(self.path) as db:
