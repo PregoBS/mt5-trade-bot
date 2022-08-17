@@ -26,13 +26,16 @@ class TradeRiskManager(Observer, Subject):
         self._settings = settings
 
     def update(self, state: StrategyState) -> None:
+        print(f"TRADE RISK: Updating")
         if not self._can_open_trade(state):
             return None
 
         self._state = state
-        return self.update(state)
+        return self.notify()
 
     def notify(self) -> None:
+        if self._state is None:
+            return None
         for ob in self.observers:
             ob.update(self._state)
         return None
