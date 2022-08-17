@@ -7,13 +7,11 @@ class Subject(ABC):
     def __init__(self) -> None:
         self.observers: List[Observer] = []
 
-    @abstractmethod
     def subscribe(self, ob: Observer) -> None:
-        pass
+        return self.observers.append(ob)
 
-    @abstractmethod
     def unsubscribe(self, ob: Observer) -> None:
-        pass
+        return self.observers.remove(ob)
 
     @abstractmethod
     def notify(self) -> None:
