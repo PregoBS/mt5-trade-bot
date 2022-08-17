@@ -25,6 +25,7 @@ class EMACrossover(Strategy):
         return None
 
     def _change_state(self, symbol: str, timeframe: str, dataframe: DataFrame) -> None:
+        self._state = None
         if self._is_buy:
             self._set_buy_state(symbol, timeframe, dataframe)
         if self._is_sell:
