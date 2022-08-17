@@ -1,5 +1,5 @@
 from design_patterns.observer_pattern import Observer, Subject
-import strategies
+from strategies import StrategyState
 from typing import List
 
 
@@ -20,7 +20,7 @@ class TradeBot(Observer, Subject):
         for observer in self.observers:
             observer.update(self._state)
 
-    def update(self, state: strategies.State) -> None:
+    def update(self, state: StrategyState) -> None:
         print(f"\nTRADE BOT: Recebendo atualização\n{state.strategy}")
         if state.is_buy:
             print(f"É PARA COMPRAR: {state.symbol}")
