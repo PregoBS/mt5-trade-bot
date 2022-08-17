@@ -1,4 +1,4 @@
-from api.market_data_api import MarketDataAPI, TimeFrame, Attributes
+from api import MarketDataAPI, TimeFrame, Attributes
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import MetaTrader5 as mt5
@@ -28,7 +28,7 @@ class MetaTrader5API(MarketDataAPI):
     def shutdown(self) -> bool:
         """MT5 connection shutdown"""
         return mt5.shutdown()
-    
+
     def _get_timeframe(self, timeframe: str) -> int:
         timeframes = TimeFrame(
             M1=mt5.TIMEFRAME_M1,
@@ -90,16 +90,31 @@ class MetaTrader5API(MarketDataAPI):
 
     def get_symbol_attributes(self, symbol: str) -> Attributes:
         symbol_info = mt5.symbol_info(symbol)
-        digits = symbol_info.digits
-        spread = float(round(abs(symbol_info.ask - symbol_info.bid), digits))
-        return Attributes(ask=round(symbol_info.ask, digits),
-                          bid=round(symbol_info.bid, digits),
-                          spread=spread,
-                          digits=digits,
+        converter = self._usd_profit_converter(str(symbol_info.currency_profit))
+        return Attributes(ask=round(symbol_info.ask, symbol_info.digits),
+                          bid=round(symbol_info.bid, symbol_info.digits),
+                          usd_profit_converter=converter,
+                          spread=round(abs(symbol_info.ask - symbol_info.bid), symbol_info.digits),
+                          digits=symbol_info.digits,
                           tick=symbol_info.trade_tick_size,
                           contract_size=symbol_info.trade_contract_size,
-                          currency_base=symbol_info.currency_base,
-                          currency_profit=symbol_info.currency_profit,
+                          currency_base=str(symbol_info.currency_base),
+                          currency_profit=str(symbol_info.currency_profit),
                           volume_max=symbol_info.volume_max,
                           volume_min=symbol_info.volume_min,
                           volume_step=symbol_info.volume_step)
+
+    def _usd_profit_converter(self, currency_profit: str) -> float:
+        """
+        EX: the currency profit is GBP
+        try to find the price of USDGBP then use the LASTPRICE as the CONVERTER
+        if USDGBP is not found, try the reverse, GBPUSD, and then use (1 / LASTPRICE) as the CONVERTER
+        otherwise the CONVERTER is zero
+        """
+        try:
+            return mt5.symbol_info(f"USD{currency_profit}").ask
+        except AttributeError:
+            try:
+                return mt5.symbol_info(f"{currency_profit}USD").ask
+            except AttributeError:
+                return 0

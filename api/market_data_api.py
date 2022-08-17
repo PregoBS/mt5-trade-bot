@@ -20,6 +20,7 @@ class TimeFrame:
 class Attributes:
     ask: float
     bid: float
+    usd_profit_converter: float
     digits: int
     currency_base: str
     currency_profit: str
