@@ -48,6 +48,7 @@ class Strategy(Subject):
     def notify(self) -> None:
         if self._state is None:
             return None
+
         for ob in self.observers:
             ob.update(self._state)
         return None

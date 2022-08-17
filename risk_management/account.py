@@ -30,14 +30,19 @@ class AccountRiskManager(Observer, Subject):
         self._settings = settings
 
     def update(self, state: StrategyState) -> None:
+        print(f"ACCOUNT RISK: Updating")
         if not self._can_open_trade(state):
             return None
         self._state = state
         return self.notify()
 
     def notify(self) -> None:
+        if self._state is None:
+            return None
+
         for ob in self.observers:
             ob.update(self._state)
+        return None
 
     def _can_open_trade(self, state: StrategyState) -> bool:
         orders = self._get_db_orders(state.symbol, state.timeframe, state.strategy)
