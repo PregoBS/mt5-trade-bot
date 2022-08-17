@@ -16,6 +16,21 @@ class TimeFrame:
     MN1: int or str
 
 
+@dataclass
+class Attributes:
+    ask: float
+    bid: float
+    digits: int
+    currency_base: str
+    currency_profit: str
+    tick: float
+    contract_size: float
+    spread: float
+    volume_step: float
+    volume_min: float
+    volume_max: float
+
+
 class MarketDataAPI(ABC):
     DATAFRAME_COLUMNS = ["_Digits", "Open", "High", "Low", "Close", "Volume", "Trades", "Spread"]
     TIMEFRAME: TimeFrame
@@ -46,4 +61,9 @@ class MarketDataAPI(ABC):
     @abstractmethod
     def _standardize_dataframe(self, dataframe: DataFrame, symbol: str) -> DataFrame:
         """Return the dataframe with standard column names"""
+        pass
+
+    @abstractmethod
+    def get_symbol_attributes(self, symbol: str) -> Attributes:
+        """Return the symbol attributes"""
         pass

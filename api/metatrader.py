@@ -1,4 +1,4 @@
-from api.market_data_api import MarketDataAPI, TimeFrame
+from api.market_data_api import MarketDataAPI, TimeFrame, Attributes
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import MetaTrader5 as mt5
@@ -85,3 +85,19 @@ class MetaTrader5API(MarketDataAPI):
         dataframe["_Digits"] = digits
         del dataframe["Date"]
         return dataframe
+
+    def get_symbol_attributes(self, symbol: str) -> Attributes:
+        symbol_info = mt5.symbol_info(symbol)
+        digits = symbol_info.digits
+        spread = float(round(abs(symbol_info.ask - symbol_info.bid), digits))
+        return Attributes(ask=round(symbol_info.ask, digits),
+                          bid=round(symbol_info.bid, digits),
+                          spread=spread,
+                          digits=digits,
+                          tick=symbol_info.trade_tick_size,
+                          contract_size=symbol_info.trade_contract_size,
+                          currency_base=symbol_info.currency_base,
+                          currency_profit=symbol_info.currency_profit,
+                          volume_max=symbol_info.volume_max,
+                          volume_min=symbol_info.volume_min,
+                          volume_step=symbol_info.volume_step)
