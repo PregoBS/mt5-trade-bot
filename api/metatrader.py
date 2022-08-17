@@ -106,15 +106,18 @@ class MetaTrader5API(MarketDataAPI):
 
     def _usd_profit_converter(self, currency_profit: str) -> float:
         """
+        EX: the currency profit is USD then the converter is 1.0
         EX: the currency profit is GBP
         try to find the price of USDGBP then use the LASTPRICE as the CONVERTER
         if USDGBP is not found, try the reverse, GBPUSD, and then use (1 / LASTPRICE) as the CONVERTER
-        otherwise the CONVERTER is zero
+        otherwise the CONVERTER is 0.0
         """
+        if currency_profit == "USD":
+            return 1.0
         try:
             return mt5.symbol_info(f"USD{currency_profit}").ask
         except AttributeError:
             try:
                 return mt5.symbol_info(f"{currency_profit}USD").ask
             except AttributeError:
-                return 0
+                return 0.0
