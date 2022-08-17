@@ -7,9 +7,10 @@ from typing import List
 
 
 @dataclass
-class Order:
+class StrategyOrder:
     type: str  # PENDING or AT_MARKET
     price: float
+    volume: float
     spread: float
     digits: int
     stop_loss: float = 0.0
@@ -17,28 +18,32 @@ class Order:
 
 
 @dataclass
-class State:
+class StrategySettings:
+    can_open_multiple_positions: bool
+    max_volume: float
+
+
+@dataclass
+class StrategyState:
     strategy: str
     symbol: str
     timeframe: str
-    order: Order
+    order: StrategyOrder
+    settings: StrategySettings
+    magic: int = 0
     is_buy: bool = False
     is_sell: bool = False
 
 
 class Strategy(Subject):
-    def __init__(self, name: str) -> None:
-        Subject.__init__(self)
+    def __init__(self, name: str, magic_number: int) -> None:
+        super().__init__()
         self.name = name
-        self._state: State or None = None
+        self.magic = magic_number
+        self._state: StrategyState or None = None
+        self._settings: StrategySettings or None = None
         self._is_buy: bool = False
         self._is_sell: bool = False
-
-    def subscribe(self, ob: Observer) -> None:
-        return self.observers.append(ob)
-
-    def unsubscribe(self, ob: Observer) -> None:
-        return self.observers.remove(ob)
 
     def notify(self) -> None:
         if self._state is None:
@@ -52,6 +57,9 @@ class Strategy(Subject):
             if signal.name == name and signal.symbol == symbol and signal.timeframe == timeframe:
                 return signal
         return None
+
+    def _set_strategy_settings(self, settings: StrategySettings) -> None:
+        self._settings = settings
 
     @abstractmethod
     def verify(self, symbol: str, timeframe: str, dataframe: DataFrame, signals: List[SignalObj]) -> None:
