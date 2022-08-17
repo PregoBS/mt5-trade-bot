@@ -11,17 +11,6 @@ load_dotenv()
 
 
 class MetaTrader5API(MarketDataAPI):
-    TIMEFRAME = TimeFrame(
-        M1=mt5.TIMEFRAME_M1,
-        M5=mt5.TIMEFRAME_M5,
-        M15=mt5.TIMEFRAME_M15,
-        H1=mt5.TIMEFRAME_H1,
-        H4=mt5.TIMEFRAME_H4,
-        D1=mt5.TIMEFRAME_D1,
-        W1=mt5.TIMEFRAME_W1,
-        MN1=mt5.TIMEFRAME_MN1
-    )
-
     def connect(self) -> bool:
         """MT5 connection"""
         kwargs = dict(
@@ -39,10 +28,23 @@ class MetaTrader5API(MarketDataAPI):
     def shutdown(self) -> bool:
         """MT5 connection shutdown"""
         return mt5.shutdown()
+    
+    def _get_timeframe(self, timeframe: str) -> int:
+        timeframes = TimeFrame(
+            M1=mt5.TIMEFRAME_M1,
+            M5=mt5.TIMEFRAME_M5,
+            M15=mt5.TIMEFRAME_M15,
+            H1=mt5.TIMEFRAME_H1,
+            H4=mt5.TIMEFRAME_H4,
+            D1=mt5.TIMEFRAME_D1,
+            W1=mt5.TIMEFRAME_W1,
+            MN1=mt5.TIMEFRAME_MN1
+        )
+        return timeframes.__getattribute__(timeframe)
 
     def create_dataframe_from_bars(self, symbol: str, timeframe: str, start_position: int,
                                    bars: int) -> pd.DataFrame or None:
-        tf = self.TIMEFRAME.__getattribute__(timeframe)
+        tf = self._get_timeframe(timeframe)
         dataframe = pd.DataFrame(mt5.copy_rates_from_pos(symbol, tf, start_position, bars))
         if not dataframe.empty:
             return self._standardize_dataframe(dataframe, symbol)
@@ -50,7 +52,7 @@ class MetaTrader5API(MarketDataAPI):
 
     def create_dataframe_from_date(self, symbol: str, timeframe: str, start_date: datetime,
                                    end_date: datetime) -> pd.DataFrame or None:
-        tf = self.TIMEFRAME.__getattribute__(timeframe)
+        tf = self._get_timeframe(timeframe)
         dataframe = pd.DataFrame(mt5.copy_rates_range(symbol, tf, start_date, end_date))
         if not dataframe.empty:
             return self._standardize_dataframe(dataframe, symbol)
