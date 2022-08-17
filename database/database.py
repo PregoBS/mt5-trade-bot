@@ -11,15 +11,8 @@ class Database(Observer):
         self.path = db_path
 
     def update(self, state) -> None:
-        print("DATABASE: Recebendo atualização do Subject")
-        print(state)
-        print("DATABASE: Okay, vou salvar tudo!")
-        # O STATE SERÁ UMA ESTRATÉGIA ACIONADA
-        # OBTER TODOS AS POSITIONS PARA O SYMBOL E TIMEFRAME DO STATE
-        # CHECAR NO STATE SE PODE AUMENTAR O LOTE
-        # COMPARAR COM STATE SE AINDA HA LOTE PRA AUMENTAR
-        # CHECAR SE PODE ABRIR MAIS DE UMA POSITION
-        # CHECAR
+        print("DATABASE: Updating")
+        return None
 
     def get_table(self, table_name: str) -> pd.DataFrame:
         with sqlite3.connect(self.path) as db:
