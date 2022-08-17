@@ -12,7 +12,7 @@ class Manager:
     def add(self, strategy: Strategy) -> None:
         return self.strategies.append(strategy)
 
-    def subscribe_observer(self, observer: Observer) -> None:
+    def subscribe(self, observer: Observer) -> None:
         for strategy in self.strategies:
             strategy.subscribe(observer)
         return None
