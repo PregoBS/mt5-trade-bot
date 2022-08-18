@@ -1,11 +1,11 @@
-from api import MarketDataAPI, TimeFrame, Attributes
+from api import Attributes, MarketDataAPI, Order, Position, TimeFrame
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
 import os
-
+from typing import List
 
 load_dotenv()
 
@@ -121,3 +121,38 @@ class MetaTrader5API(MarketDataAPI):
                 return mt5.symbol_info(f"{currency_profit}USD").ask
             except AttributeError:
                 return 0.0
+
+    def get_positions(self) -> List[Position]:
+        mt5positions = mt5.positions_get()
+        positions = []
+        for position in mt5positions:
+            time_string = str(datetime.utcfromtimestamp(float(position.time + self.delta_timezone * 3.6e3)))
+            positions.append(Position(symbol=position.symbol,
+                                      ticket=position.ticket,
+                                      open_time=time_string,
+                                      type=position.type,
+                                      volume=position.volume,
+                                      stop_loss=position.sl,
+                                      stop_gain=position.tp,
+                                      magic=position.magic))
+        return positions
+
+    def get_orders(self) -> List[Order]:
+        mt5orders = mt5.orders_get()
+        orders = []
+        for order in mt5orders:
+            # ONLY PENDING ORDERS
+            if order.type_filling == 2:
+                # CONVERT TIMESTAMP TO FORMATTED DATE STRING
+                time_string = str(datetime.utcfromtimestamp(float(order.time_setup + self.delta_timezone * 3.6e3)))
+                orders.append(Order(symbol=order.symbol,
+                                    ticket=order.ticket,
+                                    placed_time=time_string,
+                                    type=order.type,
+                                    volume=order.volume_current,
+                                    price_open=order.price_open,
+                                    price_stop_limit=order.price_stoplimit,
+                                    stop_loss=order.sl,
+                                    stop_gain=order.tp,
+                                    magic=order.magic))
+        return orders

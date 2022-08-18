@@ -2,18 +2,19 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from pandas import DataFrame
+from typing import List
 
 
 @dataclass
 class TimeFrame:
-    M1: int or str
-    M5: int or str
-    M15: int or str
-    H1: int or str
-    H4: int or str
-    D1: int or str
-    W1: int or str
-    MN1: int or str
+    M1: str
+    M5: str
+    M15: str
+    H1: str
+    H4: str
+    D1: str
+    W1: str
+    MN1: str
 
 
 @dataclass
@@ -30,6 +31,32 @@ class Attributes:
     volume_step: float
     volume_min: float
     volume_max: float
+
+
+@dataclass
+class Position:
+    symbol: str
+    ticket: int
+    open_time: str
+    type: str
+    volume: float
+    stop_loss: float
+    stop_gain: float
+    magic: int
+
+
+@dataclass
+class Order:
+    symbol: str
+    ticket: int
+    placed_time: str
+    type: str
+    volume: float
+    price_open: float
+    price_stop_limit: float
+    stop_loss: float
+    stop_gain: float
+    magic: int
 
 
 class MarketDataAPI(ABC):
@@ -67,4 +94,14 @@ class MarketDataAPI(ABC):
     @abstractmethod
     def get_symbol_attributes(self, symbol: str) -> Attributes:
         """Return the symbol attributes"""
+        pass
+
+    @abstractmethod
+    def get_positions(self) -> List[Position]:
+        """Return the account open positions"""
+        pass
+
+    @abstractmethod
+    def get_orders(self) -> List[Order]:
+        """Return the account placed orders"""
         pass
