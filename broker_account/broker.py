@@ -1,26 +1,23 @@
 from abc import ABC, abstractmethod
-from api import MarketDataAPI
+from api import MarketDataAPI, Order, Position
 from dataclasses import dataclass
+from typing import List
 
 
 @dataclass
 class AccountState:
-    orders: list
-    positions: list
+    orders: List[Order]
+    positions: List[Position]
 
 
-class AccountListener(ABC):
+class BrokerAccount(ABC):
     def __init__(self, api: MarketDataAPI) -> None:
         super().__init__()
         self._api = api
         self._state: AccountState or None = None
 
     @abstractmethod
-    def listen_for_changes(self) -> None:
-        pass
-
-    @abstractmethod
-    def get_current_state(self) -> None:
+    def get_acc_state(self) -> AccountState:
         pass
 
 
