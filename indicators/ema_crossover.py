@@ -20,13 +20,13 @@ class EMACrossover(Indicator):
             print("Indicator not in dataframe, first compute the Fast and Slow EMA's")
             raise KeyError
 
-        conditon1_up = dataframe[f"EMA{self.fast}"].to_numpy() > dataframe[f"EMA{self.slow}"].to_numpy()
-        conditon2_up = dataframe[f"EMA{self.fast}_Shift"].to_numpy() < dataframe[f"EMA{self.slow}_Shift"].to_numpy()
-        cross_up = np.logical_and(conditon1_up, conditon2_up)
+        condition1_up = dataframe[f"EMA{self.fast}"].to_numpy() > dataframe[f"EMA{self.slow}"].to_numpy()
+        condition2_up = dataframe[f"EMA{self.fast}_Shift"].to_numpy() < dataframe[f"EMA{self.slow}_Shift"].to_numpy()
+        cross_up = np.logical_and(condition1_up, condition2_up)
 
-        conditon1_down = dataframe[f"EMA{self.fast}"].to_numpy() < dataframe[f"EMA{self.slow}"].to_numpy()
-        conditon2_down = dataframe[f"EMA{self.fast}_Shift"].to_numpy() > dataframe[f"EMA{self.slow}_Shift"].to_numpy()
-        cross_down = np.logical_and(conditon1_down, conditon2_down)
+        condition1_down = dataframe[f"EMA{self.fast}"].to_numpy() < dataframe[f"EMA{self.slow}"].to_numpy()
+        condition2_down = dataframe[f"EMA{self.fast}_Shift"].to_numpy() > dataframe[f"EMA{self.slow}_Shift"].to_numpy()
+        cross_down = np.logical_and(condition1_down, condition2_down)
 
         dataframe[self.name] = np.where(cross_up, 1, np.where(cross_down, -1, 0))
 
