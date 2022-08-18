@@ -1,3 +1,4 @@
+from broker_account import BrokerAccount
 from database import Database
 from dataclasses import dataclass
 from datetime import date
@@ -15,9 +16,10 @@ class AccountRiskSettings:
 
 
 class AccountRiskManager(Observer, Subject):
-    def __init__(self, db: Database) -> None:
+    def __init__(self, db: Database, account: BrokerAccount) -> None:
         super().__init__()
         self._db = db
+        self._acc = account
         self._state: StrategyState or None = None
         self._settings: AccountRiskSettings or None = None
 
