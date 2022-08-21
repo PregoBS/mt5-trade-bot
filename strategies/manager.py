@@ -17,6 +17,6 @@ class Manager:
             strategy.subscribe(observer)
         return None
 
-    def verify_all(self, symbol: str, timeframe: str, dataframe: DataFrame, signals: List[SignalObj]) -> None:
+    def check_for_new_position(self, symbol: str, timeframe: str, dataframe: DataFrame, signals: List[SignalObj]) -> None:
         for strategy in self.strategies:
             strategy.verify(symbol, timeframe, dataframe, signals)
