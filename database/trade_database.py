@@ -90,7 +90,7 @@ class TradeDatabase(Database):
                                                   open_time=state.open_time,
                                                   open_price=state.open_price,
                                                   volume=state.volume,
-                                                  position_type=state.position_type.value,
+                                                  position_type=state.position_type,
                                                   stop_loss=state.stop_loss,
                                                   stop_gain=state.stop_gain,
                                                   magic=state.magic))
@@ -106,7 +106,7 @@ class TradeDatabase(Database):
                                             open_price=state.open_price,
                                             close_price=state.close_price,
                                             volume=state.volume,
-                                            trade_type=state.trade_type.value,
+                                            trade_type=state.trade_type,
                                             profit=state.profit,
                                             stop_loss=state.stop_loss,
                                             stop_gain=state.stop_gain,
@@ -123,7 +123,7 @@ class TradeDatabase(Database):
                                             placed_time=state.placed_time,
                                             price=state.price,
                                             volume=state.volume,
-                                            order_type=state.order_type.value,
+                                            order_type=state.order_type,
                                             stop_loss=state.stop_loss,
                                             stop_gain=state.stop_gain,
                                             magic=state.magic))

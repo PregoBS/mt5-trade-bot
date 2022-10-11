@@ -92,7 +92,7 @@ class NewPositionDatabase:
     open_time: str
     open_price: float
     volume: float
-    position_type: OrderType
+    position_type: str
     stop_loss: float
     stop_gain: float
     magic: int
@@ -109,7 +109,7 @@ class NewTradeDatabase:
     open_price: float
     close_price: float
     volume: float
-    trade_type: OrderType
+    trade_type: str
     profit: float
     stop_loss: float
     stop_gain: float
@@ -128,7 +128,7 @@ class PlacedOrderDatabase:
     placed_time: str
     price: float
     volume: float
-    order_type: OrderType
+    order_type: str
     stop_loss: float
     stop_gain: float
     magic: int
