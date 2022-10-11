@@ -1,5 +1,9 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from pandas import DataFrame
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 
 class Indicator(ABC):

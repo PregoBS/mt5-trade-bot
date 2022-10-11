@@ -8,10 +8,12 @@ class Subject(ABC):
         self.observers: List[Observer] = []
 
     def subscribe(self, ob: Observer) -> None:
-        return self.observers.append(ob)
+        if ob not in self.observers:
+            self.observers.append(ob)
 
     def unsubscribe(self, ob: Observer) -> None:
-        return self.observers.remove(ob)
+        if ob in self.observers:
+            self.observers.remove(ob)
 
     @abstractmethod
     def notify(self) -> None:

@@ -1,6 +1,12 @@
-from database.database import Database
+from __future__ import annotations
+from database import Database
 from dataclasses import dataclass
-import pandas as pd
+from shared_data_structures import CanceledOrderDatabase, DeletePositionDatabase, NewPositionDatabase,\
+    NewTradeDatabase, OrderType, PlacedOrderDatabase, WaitToCheckAgainState
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from symbols_info import SymbolsInfo
 
 
 @dataclass
@@ -55,11 +61,80 @@ class Trade:
 
 
 class TradeDatabase(Database):
-    def __init__(self, db_path: str) -> None:
+    def __init__(self, db_path: str, symbols_info: SymbolsInfo) -> None:
         super().__init__(db_path)
+        self._symbols_info = symbols_info
+        self._comment = ""
         self._create_table_trades()
         self._create_table_positions()
         self._create_table_orders()
+
+    def update(self, state: NewPositionDatabase or NewTradeDatabase or PlacedOrderDatabase or
+                            CanceledOrderDatabase or DeletePositionDatabase) -> None:
+        self._store_from_state(state)
+        if isinstance(state, NewPositionDatabase) or isinstance(state, PlacedOrderDatabase):
+            self._symbols_info.update(WaitToCheckAgainState(symbol=state.symbol,
+                                                            timeframe=state.timeframe,
+                                                            strategy=state.strategy))
+        print(f"TRADE DATABASE: Updating.. --- COMMENT: {self._comment}")
+        return None
+
+    def _store_from_state(self, state: NewPositionDatabase or NewTradeDatabase or PlacedOrderDatabase or
+                                       CanceledOrderDatabase) -> None:
+        if isinstance(state, NewPositionDatabase):
+            self._comment = f"Inserting New Position for {state.symbol}"
+            return self._insert_position(Position(symbol=state.symbol,
+                                                  timeframe=state.timeframe,
+                                                  strategy=state.strategy,
+                                                  ticket=state.ticket,
+                                                  open_time=state.open_time,
+                                                  open_price=state.open_price,
+                                                  volume=state.volume,
+                                                  position_type=state.position_type.value,
+                                                  stop_loss=state.stop_loss,
+                                                  stop_gain=state.stop_gain,
+                                                  magic=state.magic))
+        if isinstance(state, NewTradeDatabase):
+            self._comment = f"Deleting Position and Inserting New Trade for {state.symbol}"
+            self._delete_position(state.ticket)
+            return self._insert_trade(Trade(symbol=state.symbol,
+                                            timeframe=state.timeframe,
+                                            strategy=state.strategy,
+                                            ticket=state.ticket,
+                                            open_time=state.open_time,
+                                            close_time=state.close_time,
+                                            open_price=state.open_price,
+                                            close_price=state.close_price,
+                                            volume=state.volume,
+                                            trade_type=state.trade_type.value,
+                                            profit=state.profit,
+                                            stop_loss=state.stop_loss,
+                                            stop_gain=state.stop_gain,
+                                            commission=state.commission,
+                                            swap=state.swap,
+                                            fee=state.fee,
+                                            magic=state.magic))
+        if isinstance(state, PlacedOrderDatabase):
+            self._comment = f"Inserting New Pending Order for {state.symbol}"
+            return self._insert_order(Order(symbol=state.symbol,
+                                            timeframe=state.timeframe,
+                                            strategy=state.strategy,
+                                            ticket=state.ticket,
+                                            placed_time=state.placed_time,
+                                            price=state.price,
+                                            volume=state.volume,
+                                            order_type=state.order_type.value,
+                                            stop_loss=state.stop_loss,
+                                            stop_gain=state.stop_gain,
+                                            magic=state.magic))
+        if isinstance(state, CanceledOrderDatabase):
+            self._comment = f"Deleting Pending Order for ticket {state.ticket}"
+            return self._delete_order(state.ticket)
+        if isinstance(state, DeletePositionDatabase):
+            self._comment = f"Deleting Position for ticket {state.ticket}"
+            return self._delete_position(state.ticket)
+        self._comment = f"Nothing to do"
+        return None
 
     def _create_table_trades(self):
         columns = """
@@ -125,6 +200,9 @@ class TradeDatabase(Database):
         """
         return self.insert_into_table("Positions", columns, values)
 
+    def _delete_position(self, ticket: int) -> None:
+        return self.delete_from_table("Positions", "ticket", ticket)
+
     def _create_table_orders(self):
         columns = """
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,3 +229,6 @@ class TradeDatabase(Database):
         {order.price}, {order.volume},'{order.order_type}', {order.stop_loss}, {order.stop_gain}, {order.magic}
         """
         return self.insert_into_table("Orders", columns, values)
+
+    def _delete_order(self, ticket: int) -> None:
+        return self.delete_from_table("Orders", "ticket", ticket)

@@ -1,58 +1,79 @@
-from api import Attributes, MarketDataAPI, Order, Position, TimeFrame
+from __future__ import annotations
+from api import Attributes, MarketDataAPI, Order, Position, TimeFrames, TradeResult
+from dataclasses import dataclass
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
 import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
-import os
-from typing import List
+from shared_data_structures import OrderType, OrderExecution, OrderSendResponse
+from typing import List, TYPE_CHECKING
 
-load_dotenv()
+if TYPE_CHECKING:
+    from shared_data_structures import OrderSendRequest
+
+
+@dataclass
+class MT5Credentials:
+    path: str
+    login: int
+    server: str
+    password: str
 
 
 class MetaTrader5API(MarketDataAPI):
-    def connect(self) -> bool:
+    ORDER_EXECUTION: dict[OrderExecution, int] = {
+        OrderExecution.OPEN_POSITION.value: mt5.TRADE_ACTION_DEAL,
+        OrderExecution.CLOSE_POSITION.value: mt5.TRADE_ACTION_DEAL,
+        OrderExecution.MODIFY_POSITION.value: mt5.TRADE_ACTION_SLTP,
+        OrderExecution.SEND_PENDING_ORDER.value: mt5.TRADE_ACTION_PENDING,
+        OrderExecution.MODIFY_PENDING_ORDER.value: mt5.TRADE_ACTION_MODIFY,
+        OrderExecution.DELETE_PENDING_ORDER.value: mt5.TRADE_ACTION_REMOVE
+    }
+
+    ORDER_TYPES: dict[OrderType, int] = {
+        OrderType.BUY.value: mt5.ORDER_TYPE_BUY,
+        OrderType.SELL.value: mt5.ORDER_TYPE_SELL,
+        OrderType.BUY_LIMIT.value: mt5.ORDER_TYPE_BUY_LIMIT,
+        OrderType.BUY_STOP.value: mt5.ORDER_TYPE_BUY_STOP,
+        OrderType.BUY_STOP_LIMIT.value: mt5.ORDER_TYPE_BUY_STOP_LIMIT,
+        OrderType.SELL_LIMIT.value: mt5.ORDER_TYPE_SELL_LIMIT,
+        OrderType.SELL_STOP.value: mt5.ORDER_TYPE_SELL_STOP,
+        OrderType.SELL_STOP_LIMIT.value: mt5.ORDER_TYPE_SELL_STOP_LIMIT
+    }
+
+    TIMEFRAMES: dict[TimeFrames, int] = {
+        TimeFrames.M1.value: mt5.TIMEFRAME_M1,
+        TimeFrames.M5.value: mt5.TIMEFRAME_M5,
+        TimeFrames.M15.value: mt5.TIMEFRAME_M15,
+        TimeFrames.H1.value: mt5.TIMEFRAME_H1,
+        TimeFrames.H4.value: mt5.TIMEFRAME_H4,
+        TimeFrames.D1.value: mt5.TIMEFRAME_D1,
+        TimeFrames.W1.value: mt5.TIMEFRAME_W1,
+        TimeFrames.MN1.value: mt5.TIMEFRAME_MN1,
+    }
+
+    def connect(self, credentials: MT5Credentials) -> bool:
         """MT5 connection"""
-        kwargs = dict(
-            path=os.getenv("MT5_PATH") or "",
-            login=int(os.getenv("MT5_LOGIN")) or 0,
-            server=os.getenv("MT5_SERVER") or "",
-            password=os.getenv("MT5_PASSWORD") or "",
-        )
-        if not mt5.initialize(**kwargs):
+        if not mt5.initialize(**credentials.__dict__):
             print(f"MT5 Initialize Failed, error code = {mt5.last_error()}")
             return False
-        else:
-            return True
+        return True
 
     def shutdown(self) -> bool:
         """MT5 connection shutdown"""
         return mt5.shutdown()
 
-    def _get_timeframe(self, timeframe: str) -> int:
-        timeframes = TimeFrame(
-            M1=mt5.TIMEFRAME_M1,
-            M5=mt5.TIMEFRAME_M5,
-            M15=mt5.TIMEFRAME_M15,
-            H1=mt5.TIMEFRAME_H1,
-            H4=mt5.TIMEFRAME_H4,
-            D1=mt5.TIMEFRAME_D1,
-            W1=mt5.TIMEFRAME_W1,
-            MN1=mt5.TIMEFRAME_MN1
-        )
-        return timeframes.__getattribute__(timeframe)
-
-    def create_dataframe_from_bars(self, symbol: str, timeframe: str, start_position: int,
+    def create_dataframe_from_bars(self, symbol: str, timeframe: TimeFrames, start_position: int,
                                    bars: int) -> pd.DataFrame or None:
-        tf = self._get_timeframe(timeframe)
+        tf = self.TIMEFRAMES[timeframe]
         dataframe = pd.DataFrame(mt5.copy_rates_from_pos(symbol, tf, start_position, bars))
         if not dataframe.empty:
             return self._standardize_dataframe(dataframe, symbol)
         return None
 
-    def create_dataframe_from_date(self, symbol: str, timeframe: str, start_date: datetime,
+    def create_dataframe_from_date(self, symbol: str, timeframe: TimeFrames, start_date: datetime,
                                    end_date: datetime) -> pd.DataFrame or None:
-        tf = self._get_timeframe(timeframe)
+        tf = self.TIMEFRAMES[timeframe]
         dataframe = pd.DataFrame(mt5.copy_rates_range(symbol, tf, start_date, end_date))
         if not dataframe.empty:
             return self._standardize_dataframe(dataframe, symbol)
@@ -91,7 +112,8 @@ class MetaTrader5API(MarketDataAPI):
     def get_symbol_attributes(self, symbol: str) -> Attributes:
         symbol_info = mt5.symbol_info(symbol)
         converter = self._usd_profit_converter(str(symbol_info.currency_profit))
-        return Attributes(ask=round(symbol_info.ask, symbol_info.digits),
+        return Attributes(symbol=symbol,
+                          ask=round(symbol_info.ask, symbol_info.digits),
                           bid=round(symbol_info.bid, symbol_info.digits),
                           usd_profit_converter=converter,
                           spread=round(abs(symbol_info.ask - symbol_info.bid), symbol_info.digits),
@@ -123,19 +145,54 @@ class MetaTrader5API(MarketDataAPI):
                 return 0.0
 
     def get_positions(self) -> List[Position]:
-        mt5positions = mt5.positions_get()
         positions = []
+        mt5positions = mt5.positions_get()
+        if mt5positions is None:
+            return positions
+
         for position in mt5positions:
-            time_string = str(datetime.utcfromtimestamp(float(position.time + self.delta_timezone * 3.6e3)))
+            comment = position.comment.split(" ")
+            timeframe = comment[1] if len(comment) > 0 else ""
+            strategy = comment[0] if len(comment) > 0 else ""
+            time_string = self.format_timestamp(position.time)
             positions.append(Position(symbol=position.symbol,
+                                      timeframe=timeframe,
+                                      strategy=strategy,
                                       ticket=position.ticket,
+                                      price_open=position.price_open,
                                       open_time=time_string,
                                       type=position.type,
                                       volume=position.volume,
                                       stop_loss=position.sl,
                                       stop_gain=position.tp,
-                                      magic=position.magic))
+                                      magic=position.magic,
+                                      profit=position.profit))
         return positions
+
+    def get_position(self, ticket: int) -> Position:
+        mt5positions = mt5.positions_get()
+
+        for position in mt5positions:
+            if position.ticket == ticket:
+                comment = position.comment.split(" ")
+                timeframe = comment[1] if len(comment) > 0 else ""
+                strategy = comment[0] if len(comment) > 0 else ""
+                time_string = self.format_timestamp(position.time)
+                return Position(symbol=position.symbol,
+                                timeframe=timeframe,
+                                strategy=strategy,
+                                ticket=position.ticket,
+                                price_open=position.price_open,
+                                open_time=time_string,
+                                type=position.type,
+                                volume=position.volume,
+                                stop_loss=position.sl,
+                                stop_gain=position.tp,
+                                magic=position.magic,
+                                profit=position.profit)
+
+    def format_timestamp(self, timestamp: int) -> str:
+        return str(datetime.utcfromtimestamp(float(timestamp + self.delta_timezone * 3.6e3)))
 
     def get_orders(self) -> List[Order]:
         mt5orders = mt5.orders_get()
@@ -156,3 +213,237 @@ class MetaTrader5API(MarketDataAPI):
                                     stop_gain=order.tp,
                                     magic=order.magic))
         return orders
+
+    def get_trade_result(self, ticket: int) -> TradeResult:
+        commission, swap, fee, profit = 0, 0, 0, 0
+        deals = mt5.history_deals_get(position=ticket)
+        for deal in deals:
+            commission += deal.commission
+            swap += deal.swap
+            fee += deal.fee
+            profit += deal.profit
+        open_time = self.format_timestamp(deals[0].time)
+        open_price = deals[0].price
+        close_time = self.format_timestamp(deals[1].time) if len(deals) > 1 else ""
+        close_price = deals[1].price if len(deals) > 1 else 0.0
+        return TradeResult(open_time=open_time,
+                           open_price=open_price,
+                           close_time=close_time,
+                           close_price=close_price,
+                           ticket=ticket,
+                           commission=commission,
+                           fee=fee,
+                           swap=swap,
+                           profit=profit)
+
+    def have_free_margin(self, order_type: OrderType, symbol: str, volume: float, price: float) -> bool:
+        margin_free = mt5.account_info().margin_free
+        margin_needed = mt5.order_calc_margin(self.ORDER_TYPES[order_type], symbol, volume, price)
+        return margin_free > margin_needed or False
+
+    def _is_buy_or_sell_order(self, order_type: OrderType) -> bool:
+        return (self.ORDER_TYPES[order_type] == self.ORDER_TYPES[OrderType.BUY.value] or
+                self.ORDER_TYPES[order_type] == self.ORDER_TYPES[OrderType.SELL.value])
+
+    def open_position(self, request: OrderSendRequest) -> OrderSendResponse or None:
+        is_to_execute = True
+        status = False
+        ticket = request.ticket
+        code = 0
+        comment = ""
+
+        price = mt5.symbol_info(request.symbol).bid
+        if request.order_type == mt5.ORDER_TYPE_BUY:
+            price = mt5.symbol_info(request.symbol).ask
+
+        if not self._is_buy_or_sell_order(request.order_type.value):
+            comment = f"The Order Type ({request.order_type.value}) is neither BUY nor SELL"
+            is_to_execute = False
+
+        if not self.have_free_margin(request.order_type.value, request.symbol, request.volume, price):
+            comment = f"{request.symbol} - Do not have free margin for volume {request.volume} at price {price}"
+            is_to_execute = False
+
+        if is_to_execute:
+            request_position_open_atmarket = {
+                "action": self.ORDER_EXECUTION[request.action.value],
+                "symbol": request.symbol,
+                "volume": request.volume,
+                "type": self.ORDER_TYPES[request.order_type.value],
+                "price": price,
+                "sl": request.sl,
+                "tp": request.tp,
+                "deviation": request.deviation,
+                "magic": request.magic,
+                "comment": request.comment,
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": mt5.ORDER_FILLING_IOC,
+            }
+            result = mt5.order_send(request_position_open_atmarket)
+            status = result.retcode == 10009
+            ticket = result.order
+            code = result.retcode
+            comment = result.comment
+
+        return OrderSendResponse(symbol=request.symbol,
+                                 action=request.action,
+                                 order_type=request.order_type,
+                                 status=status,
+                                 ticket=ticket,
+                                 code=code,
+                                 comment=comment)
+
+    def close_position(self, request: OrderSendRequest) -> OrderSendResponse or None:
+        symbol_attr = self.get_symbol_attributes(request.symbol)
+
+        is_to_execute = True
+        status = False
+        ticket = request.ticket
+        code = 0
+        comment = ""
+
+        position = self.get_position(request.ticket)
+        if position is None:
+            comment = f"The Position ({ticket}) is already Closed"
+            is_to_execute = False
+
+        price = symbol_attr.ask
+        order_type = self.ORDER_TYPES[OrderType.BUY.value]
+        if self.ORDER_TYPES[request.order_type.value] == self.ORDER_TYPES[OrderType.BUY.value]:
+            order_type = self.ORDER_TYPES[OrderType.SELL.value]
+            price = symbol_attr.bid
+
+        if is_to_execute:
+            request_position_close = {
+                "action": self.ORDER_EXECUTION[request.action.value],
+                "symbol": request.symbol,
+                "volume": position.volume,
+                "type": order_type,
+                "position": request.ticket,
+                "price": price,
+                "deviation": request.deviation,
+                "magic": request.magic,
+                "comment": request.comment,
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": mt5.ORDER_FILLING_IOC,
+            }
+            result = mt5.order_send(request_position_close)
+            status = result.retcode == 10009
+            ticket = result.request.position
+            code = result.retcode
+            comment = result.comment
+        return OrderSendResponse(symbol=request.symbol,
+                                 action=request.action,
+                                 order_type=request.order_type,
+                                 status=status,
+                                 ticket=ticket,
+                                 code=code,
+                                 comment=comment)
+
+    def modify_position(self, request: OrderSendRequest) -> OrderSendResponse or None:
+        request_position_modify = {
+            "action": self.ORDER_EXECUTION[request.action.value],
+            "position": request.ticket,
+            "symbol": request.symbol,
+            "magic": request.magic,
+            "sl": request.sl,
+            "tp": request.tp
+        }
+        result = mt5.order_send(request_position_modify)
+        status = result.retcode == 10009
+        return OrderSendResponse(symbol=request.symbol,
+                                 action=request.action,
+                                 order_type=request.order_type,
+                                 status=status,
+                                 ticket=result.order,
+                                 code=result.retcode,
+                                 comment=result.comment)
+
+    def _is_pending_order(self, type_order: int) -> bool:
+        return ((type_order == self.ORDER_TYPES[OrderType.BUY_LIMIT.value]) or
+                (type_order == self.ORDER_TYPES[OrderType.BUY_STOP.value]) or
+                (type_order == self.ORDER_TYPES[OrderType.BUY_STOP_LIMIT.value]) or
+                (type_order == self.ORDER_TYPES[OrderType.SELL_LIMIT.value]) or
+                (type_order == self.ORDER_TYPES[OrderType.SELL_STOP.value]) or
+                (type_order == self.ORDER_TYPES[OrderType.SELL_STOP_LIMIT.value]))
+
+    def send_pending_order_limit_stop(self, request: OrderSendRequest) -> OrderSendResponse or None:
+        is_to_execute = True
+        status = False
+        ticket = 0
+        code = 0
+        comment = ""
+
+        if not self._is_pending_order(self.ORDER_TYPES[request.order_type.value]):
+            comment = f"The Order Type ({request.order_type.value}) is not a Pending Order"
+            is_to_execute = False
+
+        if not self.have_free_margin(request.order_type, request.symbol, request.volume, request.price):
+            comment = f"{request.symbol} - Do not have free margin for volume {request.volume} at price {request.price}"
+            is_to_execute = False
+
+        if is_to_execute:
+            request_send_order_limit = {
+                "action": self.ORDER_EXECUTION[request.action.value],
+                "symbol": request.symbol,
+                "magic": request.magic,
+                "volume": request.volume,
+                "type": self.ORDER_EXECUTION[request.order_type.value],
+                "stoplimit": request.limit_price,
+                "price": request.price,
+                "sl": request.sl,
+                "tp": request.tp,
+                "type_time": mt5.ORDER_TIME_GTC,
+                "expiration": 0
+            }
+            result = mt5.order_send(request_send_order_limit)
+            status = result.retcode == 10009
+            ticket = result.request.position
+            code = result.retcode
+            comment = result.comment
+        return OrderSendResponse(symbol=request.symbol,
+                                 action=request.action,
+                                 order_type=request.order_type,
+                                 status=status,
+                                 ticket=ticket,
+                                 code=code,
+                                 comment=comment)
+
+    def modify_pending_order(self, request: OrderSendRequest) -> OrderSendResponse or None:
+        request_order_modify = {
+            "action": self.ORDER_TYPES[request.action.value],
+            "symbol": request.symbol,
+            "magic": request.magic,
+            "order": request.ticket,
+            "price": request.price,
+            "stoplimit": request.stop_limit,
+            "sl": request.sl,
+            "tp": request.tp,
+            "type_time": 0,
+            "expiration": 0
+        }
+        result = mt5.order_send(request_order_modify)
+        status = result.retcode == 10009
+        return OrderSendResponse(symbol=request.symbol,
+                                 action=request.action,
+                                 order_type=request.order_type,
+                                 status=status,
+                                 ticket=result.order,
+                                 code=result.retcode,
+                                 comment=result.comment)
+
+    def delete_pending_order(self, request: OrderSendRequest) -> OrderSendResponse or None:
+        request_order_delete = {
+            "action": self.ORDER_EXECUTION[request.action.value],
+            "magic": request.magic,
+            "order": request.ticket
+        }
+        result = mt5.order_send(request_order_delete)
+        status = result == 10009
+        return OrderSendResponse(symbol=request.symbol,
+                                 action=request.action,
+                                 order_type=request.order_type,
+                                 status=status,
+                                 ticket=result.order,
+                                 code=result.retcode,
+                                 comment=result.comment)

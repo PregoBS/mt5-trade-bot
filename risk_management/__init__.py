@@ -1,2 +1,2 @@
-from risk_management.account import AccountRiskManager, AccountRiskSettings
-from risk_management.trade import TradeRiskManager, TradeRiskSettings
+from .account import AccountRiskManager, AccountRiskSettings
+from .trade import TradeRiskManager, TradeRiskSettings

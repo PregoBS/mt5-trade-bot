@@ -1,10 +1,17 @@
-from broker_account import BrokerAccount
-from database import Database
+from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
-from design_patterns.observer_pattern import Observer, Subject
+from design_patterns.observer_pattern import Observer
 import pandas as pd
-from strategies import StrategyState
+from shared_data_structures import WaitToCheckAgainState
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from database import Database
+    from pandas import DataFrame
+    from risk_management import TradeRiskManager
+    from shared_data_structures import StrategyState, OrderExecution
+    from symbols_info import SymbolsInfo
 
 
 @dataclass
@@ -15,12 +22,12 @@ class AccountRiskSettings:
     op_per_day: int = 0
 
 
-class AccountRiskManager(Observer, Subject):
-    def __init__(self, db: Database, account: BrokerAccount) -> None:
-        super().__init__()
+class AccountRiskManager(Observer):
+    def __init__(self, db: Database, trade_risk: TradeRiskManager, symbols_info: SymbolsInfo) -> None:
+        self._trade_risk = trade_risk
+        self._symbols_info = symbols_info
+        self._comment = ""
         self._db = db
-        self._acc = account
-        self._state: StrategyState or None = None
         self._settings: AccountRiskSettings or None = None
 
     @property
@@ -32,29 +39,31 @@ class AccountRiskManager(Observer, Subject):
         self._settings = settings
 
     def update(self, state: StrategyState) -> None:
-        print(f"ACCOUNT RISK: Updating")
-        if not self._can_open_trade(state):
-            return None
-        self._state = state
-        return self.notify()
-
-    def notify(self) -> None:
-        if self._state is None:
-            return None
-
-        for ob in self.observers:
-            ob.update(self._state)
+        if self._is_new_trade(state.action):
+            if not self._can_open_trade(state):
+                print(f"ACCOUNT RISK: Updating --- COMMENT: {self._comment}")
+                self._symbols_info.update(WaitToCheckAgainState(symbol=state.symbol,
+                                                                timeframe=state.timeframe,
+                                                                strategy=state.strategy))
+                return None
+        print(f"ACCOUNT RISK: Updating --- COMMENT: {self._comment}")
+        self._trade_risk.update(state)
         return None
+
+    def _is_new_trade(self, action: OrderExecution) -> bool:
+        if "OPEN_POSITION" in action.value or "SEND_PENDING_ORDER" in action.value:
+            return True
+        self._comment = "Not a new Trade"
+        return False
 
     def _can_open_trade(self, state: StrategyState) -> bool:
         orders = self._get_db_orders(state.symbol, state.timeframe, state.strategy)
         positions = self._get_db_positions(state.symbol, state.timeframe, state.strategy)
-        trades = self._get_db_trades()
-        day_profit = trades["profit"].sum()
+        trades = self._get_db_trades_of_today()
+        today_profit = trades["profit"].sum()
 
         if not state.settings.can_open_multiple_positions and (len(positions) + len(orders)) > 0:
-            print("Já tem uma ordem ou posição aberta para esta estrategia")
-            print("Não vamos seguir")
+            self._comment = f"Cannot open multiple positions on {state.symbol}"
             return False
 
         if state.settings.can_open_multiple_positions:
@@ -65,39 +74,35 @@ class AccountRiskManager(Observer, Subject):
                 current_volume += orders["volume"].iloc[i]
 
             if current_volume >= state.settings.max_volume:
-                print("Já tem posições abertas ou ordens suficientes para esta estrategia")
-                print("Não vamos seguir")
+                self._comment = f"Already have positions or pending orders enough on {state.symbol}"
                 return False
 
         if 0 < self.risk_settings.op_per_day <= len(trades) + len(positions):
-            print("Já foram feitos trades demais por hoje")
-            print("Não vamos seguir")
+            self._comment = f"Too many trades for today on {state.symbol}"
             return False
 
-        if 0 < self.risk_settings.day_goal <= abs(day_profit):
-            print("Já atingiu a meta ou stop de hoje")
-            print("Não vamos seguir")
+        if 0 < self.risk_settings.day_goal <= abs(today_profit):
+            self._comment = f"Hit the Stop Loss or the Stop Gain for today on {state.symbol}"
             return False
-
+        self._comment = f"Allowed to open position on {state.symbol}"
         return True
 
-    def _get_db_trades(self) -> pd.DataFrame:
+    def _get_db_trades_of_today(self) -> DataFrame:
         trades = self._db.get_table("Trades")
         trades['open_time'] = pd.to_datetime(trades['open_time'], format="%Y-%m-%d %H:%M:%S")
         trades['open_day'] = [date(trade.year, trade.month, trade.day) for trade in trades['open_time'].to_list()]
         return trades[trades['open_day'] == date.today()]
 
-    def _get_db_orders(self, symbol: str, timeframe: str, strategy: str) -> pd.DataFrame:
+    def _get_db_orders(self, symbol: str, timeframe: str, strategy: str) -> DataFrame:
         orders = self._db.get_table("Orders")
         order_filter = ((orders["symbol"] == symbol) &
                         (orders["timeframe"] == timeframe) &
                         (orders["strategy"] == strategy))
         return orders[order_filter]
 
-    def _get_db_positions(self, symbol: str, timeframe: str, strategy: str) -> pd.DataFrame:
+    def _get_db_positions(self, symbol: str, timeframe: str, strategy: str) -> DataFrame:
         positions = self._db.get_table("Positions")
         position_filter = ((positions["symbol"] == symbol) &
                            (positions["timeframe"] == timeframe) &
                            (positions["strategy"] == strategy))
         return positions[position_filter]
-

@@ -1,18 +1,20 @@
-from abc import abstractmethod
-from design_patterns.observer_pattern import Observer
+from __future__ import annotations
+from abc import ABC, abstractmethod
 import pandas as pd
 import sqlite3
-from sqlite3 import Cursor
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sqlite3 import Cursor
 
 
-class Database(Observer):
+class Database(ABC):
     def __init__(self, db_path: str) -> None:
-        Observer.__init__(self)
         self.path = db_path
 
+    @abstractmethod
     def update(self, state) -> None:
-        print("DATABASE: Updating")
-        return None
+        pass
 
     def get_table(self, table_name: str) -> pd.DataFrame:
         with sqlite3.connect(self.path) as db:
@@ -34,6 +36,11 @@ class Database(Observer):
 
     def insert_into_table(self, name: str, columns: str, values: str) -> None:
         query = f"INSERT INTO {name} ({columns}) VALUES ({values});"
+        self._execute(query)
+        return None
+
+    def delete_from_table(self, name: str, column: str, value: int) -> None:
+        query = f"DELETE FROM {name} WHERE {column} = {value}"
         self._execute(query)
         return None
 

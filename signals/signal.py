@@ -1,6 +1,10 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from pandas import DataFrame
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 
 @dataclass

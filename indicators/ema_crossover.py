@@ -1,6 +1,10 @@
-from indicators.indicator import Indicator
+from __future__ import annotations
 import numpy as np
-import pandas as pd
+from indicators.indicator import Indicator
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
 
 
 class EMACrossover(Indicator):
@@ -9,10 +13,10 @@ class EMACrossover(Indicator):
         self.fast = fast_period
         self.slow = slow_period
 
-    def calculate(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+    def calculate(self, dataframe: DataFrame) -> DataFrame:
         return self._ema_crossover(dataframe)
 
-    def _ema_crossover(self, dataframe: pd.DataFrame) -> pd.DataFrame:
+    def _ema_crossover(self, dataframe: DataFrame) -> DataFrame:
         try:
             dataframe[f"EMA{self.fast}_Shift"] = dataframe[f"EMA{self.fast}"].shift()
             dataframe[f"EMA{self.slow}_Shift"] = dataframe[f"EMA{self.slow}"].shift()
