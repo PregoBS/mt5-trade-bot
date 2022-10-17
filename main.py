@@ -1,5 +1,5 @@
 from broker_account import BrokerAccountMT5
-import api
+from api import MetaTrader5API, MT5Credentials, TimeFrames
 import bot
 from database import TradeDatabase
 from datetime import datetime
@@ -8,6 +8,7 @@ import indicators
 import os
 import pandas as pd
 from risk_management import AccountRiskManager, AccountRiskSettings, TradeRiskManager, TradeRiskSettings
+from shared_data_structures import StrategySettings
 import signals
 import strategies
 from symbols_info import SymbolsInfo, SymbolStrategyConfig, SymbolStrategyInfo
@@ -19,11 +20,11 @@ pd.set_option('display.max_columns', 500)  # número de colunas
 pd.set_option('display.width', 1500)  # largura máxima da tabela
 
 
-def mt5_connection(mt5_api: api.MetaTrader5API) -> None:
-    mt5_credentials = api.MT5Credentials(path=os.getenv("MT5_PATH") or "",
-                                         login=int(os.getenv("MT5_LOGIN")) or 0,
-                                         server=os.getenv("MT5_SERVER") or "",
-                                         password=os.getenv("MT5_PASSWORD") or "")
+def mt5_connection(mt5_api: MetaTrader5API) -> None:
+    mt5_credentials = MT5Credentials(path=os.getenv("MT5_PATH") or "",
+                                     login=int(os.getenv("MT5_LOGIN")) or 0,
+                                     server=os.getenv("MT5_SERVER") or "",
+                                     password=os.getenv("MT5_PASSWORD") or "")
     try:
         assert mt5_api.connect(mt5_credentials) is True
     except AssertionError:
@@ -56,7 +57,7 @@ def add_strategies(manager: strategies.Manager, s: List[strategies.Strategy]) ->
 
 
 def main(symbols_info: SymbolsInfo) -> None:
-    mt5api = api.MetaTrader5API(delta_timezone=-6)
+    mt5api = MetaTrader5API(delta_timezone=-6)
     mt5_connection(mt5api)
 
     db = TradeDatabase(f"{os.path.dirname(__file__)}/database.db", symbols_info)
@@ -80,12 +81,13 @@ def main(symbols_info: SymbolsInfo) -> None:
             for symbol in symbols_info.symbols:
                 for strategy_info in symbols_info.info[symbol]:
                     for config in strategy_info.configs:
-                        # -- CONFIG ACCOUNT RISK MANAGEMENT
+                        config: SymbolStrategyConfig
+                        # -- CONFIGURE ACCOUNT RISK MANAGEMENT
                         acc_risk.risk_settings = AccountRiskSettings(capital=config.capital,
                                                                      day_goal=config.day_goal,
                                                                      day_stop=config.day_stop,
                                                                      op_per_day=config.op_per_day)
-                        # -- CONFIG TRADE RISK MANAGEMENT
+                        # -- CONFIGURE TRADE RISK MANAGEMENT
                         trade_risk.symbol_attributes = mt5api.get_symbol_attributes(symbol)
                         trade_risk.risk_settings = TradeRiskSettings(timeframe=config.timeframe,
                                                                      op_goal=config.op_goal,
@@ -98,16 +100,19 @@ def main(symbols_info: SymbolsInfo) -> None:
                         # -- COMPUTE SIGNALS
                         add_signals(signals_manager)
                         signals_results = signals_manager.compute_signals(symbol, config.timeframe, dataframe)
-                        # print("Signals:", [s.name for s in signals_results], end="\n\n")
+                        # print("Signals:", [(s.name, s.timeframe, s.value) for s in signals_results], end="\n\n")
                         # -- COMPUTE STRATEGIES
                         strategy = strategy_info.strategy
+                        strategy.set_strategy_settings(StrategySettings(timeframe=config.timeframe.value,
+                                                                        max_volume=config.max_volume,
+                                                                        can_open_multiple_positions=config.multiple_positions))
                         strategy.subscribe(acc_risk)
                         # -- CHECK CURRENT POSITIONS
                         positions = broker_acc.get_positions_by(strategy.magic)
                         for position in positions:
-                            strategy.check_protect(position, mt5api, trade_risk)
-                            strategy.check_close(position, mt5api, trade_risk)
-                        # -- CHECKING THE WAITING TIME BEFORE EACH TRADE CHECK
+                            strategy.check_protect(position, mt5api, trade_risk, dataframe)
+                            strategy.check_close(position, mt5api, trade_risk, dataframe)
+                        # -- CHECKING THE WAITING TIME BEFORE EACH NEW POSITION CHECK
                         check_interval_minutes = (datetime.today() - config.last_check).seconds // 60
                         if check_interval_minutes > config.wait_to_check:
                             strategy.check_new_position(symbol, config.timeframe, dataframe, signals_results)
@@ -120,81 +125,45 @@ def main(symbols_info: SymbolsInfo) -> None:
 
 
 if __name__ == "__main__":
+    m15_config = {
+        "timeframe": TimeFrames.M15,
+        "capital": 5000,
+        "day_goal": 0,
+        "day_stop": 0,
+        "op_per_day": 0,
+        "op_goal": 10,
+        "op_stop": 5,
+        "max_volume": 1.0,
+        "multiple_positions": False,
+        "wait_to_check": 5
+    }
+    h1_config = {
+        "timeframe": TimeFrames.H1,
+        "capital": 5000,
+        "day_goal": 0,
+        "day_stop": 0,
+        "op_per_day": 0,
+        "op_goal": 20,
+        "op_stop": 10,
+        "max_volume": 1.0,
+        "multiple_positions": False,
+        "wait_to_check": 5
+    }
     s_info = SymbolsInfo()
     s_info.add(SymbolStrategyInfo("BTCUSD",
                                   strategies.EMACrossover("EMACrossover", magic_number=99),
-                                  [SymbolStrategyConfig(timeframe="M15",
-                                                        capital=5000,
-                                                        day_goal=0,
-                                                        day_stop=0,
-                                                        op_per_day=0,
-                                                        op_goal=10,
-                                                        op_stop=5,
-                                                        wait_to_check=5),
-                                   SymbolStrategyConfig(timeframe="H1",
-                                                        capital=5000,
-                                                        day_goal=0,
-                                                        day_stop=0,
-                                                        op_per_day=0,
-                                                        op_goal=20,
-                                                        op_stop=10,
-                                                        wait_to_check=20)
-                                   ]))
+                                  [SymbolStrategyConfig(**m15_config),
+                                   SymbolStrategyConfig(**h1_config)]))
     s_info.add(SymbolStrategyInfo("ETHUSD",
                                   strategies.EMACrossover("EMACrossover", magic_number=99),
-                                  [SymbolStrategyConfig(timeframe="M15",
-                                                        capital=5000,
-                                                        day_goal=0,
-                                                        day_stop=0,
-                                                        op_per_day=0,
-                                                        op_goal=10,
-                                                        op_stop=5,
-                                                        wait_to_check=5),
-                                   SymbolStrategyConfig(timeframe="H1",
-                                                        capital=5000,
-                                                        day_goal=0,
-                                                        day_stop=0,
-                                                        op_per_day=0,
-                                                        op_goal=20,
-                                                        op_stop=10,
-                                                        wait_to_check=20)
-                                   ]))
+                                  [SymbolStrategyConfig(**m15_config),
+                                   SymbolStrategyConfig(**h1_config)]))
     s_info.add(SymbolStrategyInfo("EURUSD",
                                   strategies.EMACrossover("EMACrossover", magic_number=99),
-                                  [SymbolStrategyConfig(timeframe="M15",
-                                                        capital=5000,
-                                                        day_goal=0,
-                                                        day_stop=0,
-                                                        op_per_day=0,
-                                                        op_goal=10,
-                                                        op_stop=5,
-                                                        wait_to_check=5),
-                                   SymbolStrategyConfig(timeframe="H1",
-                                                        capital=5000,
-                                                        day_goal=0,
-                                                        day_stop=0,
-                                                        op_per_day=0,
-                                                        op_goal=30,
-                                                        op_stop=15,
-                                                        wait_to_check=20)
-                                   ]))
+                                  [SymbolStrategyConfig(**m15_config),
+                                   SymbolStrategyConfig(**h1_config)]))
     s_info.add(SymbolStrategyInfo("GBPUSD",
                                   strategies.EMACrossover("EMACrossover", magic_number=99),
-                                  [SymbolStrategyConfig(timeframe="M15",
-                                                        capital=5000,
-                                                        day_goal=0,
-                                                        day_stop=0,
-                                                        op_per_day=0,
-                                                        op_goal=10,
-                                                        op_stop=5,
-                                                        wait_to_check=5),
-                                   SymbolStrategyConfig(timeframe="H1",
-                                                        capital=5000,
-                                                        day_goal=0,
-                                                        day_stop=0,
-                                                        op_per_day=0,
-                                                        op_goal=18,
-                                                        op_stop=9,
-                                                        wait_to_check=20)
-                                   ]))
+                                  [SymbolStrategyConfig(**m15_config),
+                                   SymbolStrategyConfig(**h1_config)]))
     main(s_info)
