@@ -16,5 +16,5 @@ class Subject(ABC):
             self.observers.remove(ob)
 
     @abstractmethod
-    def notify(self) -> None:
+    def _notify(self) -> None:
         pass
