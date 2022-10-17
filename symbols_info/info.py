@@ -6,18 +6,21 @@ from shared_data_structures import WaitToCheckAgainState
 from typing import List, TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from api import TimeFrames
     from strategies import Strategy
 
 
 @dataclass
 class SymbolStrategyConfig:
-    timeframe: str
+    timeframe: TimeFrames
     capital: float
     day_goal: float
     day_stop: float
     op_per_day: int
     op_goal: float
     op_stop: float
+    max_volume: float
+    multiple_positions: bool
     wait_to_check: int
     last_check: datetime = datetime(2022, 1, 1)
 
