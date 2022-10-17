@@ -25,8 +25,9 @@ class OrderType(Enum):
 
 @dataclass
 class StrategySettings:
-    can_open_multiple_positions: bool
+    timeframe: str
     max_volume: float
+    can_open_multiple_positions: bool
 
 
 @dataclass
