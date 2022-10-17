@@ -42,14 +42,19 @@ class MetaTrader5API(MarketDataAPI):
     }
 
     TIMEFRAMES: dict[TimeFrames, int] = {
-        TimeFrames.M1.value: mt5.TIMEFRAME_M1,
-        TimeFrames.M5.value: mt5.TIMEFRAME_M5,
-        TimeFrames.M15.value: mt5.TIMEFRAME_M15,
-        TimeFrames.H1.value: mt5.TIMEFRAME_H1,
-        TimeFrames.H4.value: mt5.TIMEFRAME_H4,
-        TimeFrames.D1.value: mt5.TIMEFRAME_D1,
-        TimeFrames.W1.value: mt5.TIMEFRAME_W1,
-        TimeFrames.MN1.value: mt5.TIMEFRAME_MN1,
+        TimeFrames.M1: mt5.TIMEFRAME_M1,
+        TimeFrames.M5: mt5.TIMEFRAME_M5,
+        TimeFrames.M15: mt5.TIMEFRAME_M15,
+        TimeFrames.H1: mt5.TIMEFRAME_H1,
+        TimeFrames.H4: mt5.TIMEFRAME_H4,
+        TimeFrames.D1: mt5.TIMEFRAME_D1,
+        TimeFrames.W1: mt5.TIMEFRAME_W1,
+        TimeFrames.MN1: mt5.TIMEFRAME_MN1,
+    }
+
+    POSITION_TYPES: dict[int, OrderType] = {
+        mt5.POSITION_TYPE_BUY: OrderType.BUY,
+        mt5.POSITION_TYPE_SELL: OrderType.SELL
     }
 
     def connect(self, credentials: MT5Credentials) -> bool:
@@ -161,7 +166,7 @@ class MetaTrader5API(MarketDataAPI):
                                       ticket=position.ticket,
                                       price_open=position.price_open,
                                       open_time=time_string,
-                                      type=position.type,
+                                      type=self.POSITION_TYPES[position.type],
                                       volume=position.volume,
                                       stop_loss=position.sl,
                                       stop_gain=position.tp,
@@ -175,16 +180,16 @@ class MetaTrader5API(MarketDataAPI):
         for position in mt5positions:
             if position.ticket == ticket:
                 comment = position.comment.split(" ")
-                timeframe = comment[1] if len(comment) > 0 else ""
+                timeframe = comment[1] if len(comment) > 1 else ""
                 strategy = comment[0] if len(comment) > 0 else ""
-                time_string = self.format_timestamp(position.time)
+                datetime_string = self.format_timestamp(position.time)
                 return Position(symbol=position.symbol,
                                 timeframe=timeframe,
                                 strategy=strategy,
                                 ticket=position.ticket,
                                 price_open=position.price_open,
-                                open_time=time_string,
-                                type=position.type,
+                                open_time=datetime_string,
+                                type=self.POSITION_TYPES[position.type],
                                 volume=position.volume,
                                 stop_loss=position.sl,
                                 stop_gain=position.tp,
@@ -197,21 +202,21 @@ class MetaTrader5API(MarketDataAPI):
     def get_orders(self) -> List[Order]:
         mt5orders = mt5.orders_get()
         orders = []
+        # ONLY PENDING ORDERS
         for order in mt5orders:
-            # ONLY PENDING ORDERS
-            if order.type_filling == 2:
-                # CONVERT TIMESTAMP TO FORMATTED DATE STRING
-                time_string = str(datetime.utcfromtimestamp(float(order.time_setup + self.delta_timezone * 3.6e3)))
-                orders.append(Order(symbol=order.symbol,
-                                    ticket=order.ticket,
-                                    placed_time=time_string,
-                                    type=order.type,
-                                    volume=order.volume_current,
-                                    price_open=order.price_open,
-                                    price_stop_limit=order.price_stoplimit,
-                                    stop_loss=order.sl,
-                                    stop_gain=order.tp,
-                                    magic=order.magic))
+            if order.type_filling != 2:  # NOT PENDING ORDER
+                continue
+            datetime_string = self.format_timestamp(order.time_setup)
+            orders.append(Order(symbol=order.symbol,
+                                ticket=order.ticket,
+                                placed_time=datetime_string,
+                                type=order.type,
+                                volume=order.volume_current,
+                                price_open=order.price_open,
+                                price_stop_limit=order.price_stoplimit,
+                                stop_loss=order.sl,
+                                stop_gain=order.tp,
+                                magic=order.magic))
         return orders
 
     def get_trade_result(self, ticket: int) -> TradeResult:

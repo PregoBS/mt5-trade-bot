@@ -69,7 +69,7 @@ class Position:
     ticket: int
     price_open: float
     open_time: str
-    type: str
+    type: OrderType
     volume: float
     profit: float
     stop_loss: float
@@ -82,7 +82,7 @@ class Order:
     symbol: str
     ticket: int
     placed_time: str
-    type: str
+    type: OrderType
     volume: float
     price_open: float
     price_stop_limit: float

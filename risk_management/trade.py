@@ -4,7 +4,7 @@ from shared_data_structures import OrderRequestState, OrderSendRequest, WaitToCh
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from api import Attributes
+    from api import Attributes, TimeFrames
     from bot import TradeBot
     from shared_data_structures import OrderExecution, OrderType, StrategyState
     from symbols_info import SymbolsInfo
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class TradeRiskSettings:
-    timeframe: str
+    timeframe: TimeFrames
     op_goal: float
     op_stop: float
 
