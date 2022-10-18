@@ -78,40 +78,53 @@ def main(symbols_info: SymbolsInfo) -> None:
         try:
             broker_acc.sync_db()
 
+            # -- LOOP THROUGH EACH SYMBOL REGISTERED IN SYMBOLS_INFO
             for symbol in symbols_info.symbols:
+
+                # -- LOOP THROUGH EACH STRATEGY_INFO REGISTERED FOR EACH SYMBOL
                 for strategy_info in symbols_info.info[symbol]:
+                    strategy: strategies.Strategy = strategy_info.strategy
+
+                    # -- LOOP THROUGH EACH STRATEGY_CONFIGURATION REGISTERED FOR EACH STRATEGY_INFO
                     for config in strategy_info.configs:
                         config: SymbolStrategyConfig
+
+                        # -- MAIN PROGRAM EXECUTION -- #
                         # -- CONFIGURE ACCOUNT RISK MANAGEMENT
                         acc_risk.risk_settings = AccountRiskSettings(capital=config.capital,
                                                                      day_goal=config.day_goal,
                                                                      day_stop=config.day_stop,
                                                                      op_per_day=config.op_per_day)
+
                         # -- CONFIGURE TRADE RISK MANAGEMENT
                         trade_risk.symbol_attributes = mt5api.get_symbol_attributes(symbol)
                         trade_risk.risk_settings = TradeRiskSettings(timeframe=config.timeframe,
                                                                      op_goal=config.op_goal,
                                                                      op_stop=config.op_stop)
+
                         # -- CREATE DATAFRAME AND COMPUTE INDICATORS
                         dataframe = mt5api.create_dataframe_from_bars(symbol, config.timeframe, 0, 100)
                         add_indicators(indicators_manager)
                         dataframe = indicators_manager.compute_all(dataframe)
                         # print(dataframe.tail(3), end="\n\n")
+
                         # -- COMPUTE SIGNALS
                         add_signals(signals_manager)
                         signals_results = signals_manager.compute_signals(symbol, config.timeframe, dataframe)
                         # print("Signals:", [(s.name, s.timeframe, s.value) for s in signals_results], end="\n\n")
+
                         # -- COMPUTE STRATEGIES
-                        strategy = strategy_info.strategy
+                        strategy.subscribe(acc_risk)
                         strategy.set_strategy_settings(StrategySettings(timeframe=config.timeframe.value,
                                                                         max_volume=config.max_volume,
                                                                         can_open_multiple_positions=config.multiple_positions))
-                        strategy.subscribe(acc_risk)
+
                         # -- CHECK CURRENT POSITIONS
                         positions = broker_acc.get_positions_by(strategy.magic)
                         for position in positions:
                             strategy.check_protect(position, mt5api, trade_risk, dataframe)
                             strategy.check_close(position, mt5api, trade_risk, dataframe)
+
                         # -- CHECKING THE WAITING TIME BEFORE EACH NEW POSITION CHECK
                         check_interval_minutes = (datetime.today() - config.last_check).seconds // 60
                         if check_interval_minutes > config.wait_to_check:
