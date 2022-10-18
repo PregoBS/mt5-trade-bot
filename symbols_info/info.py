@@ -31,14 +31,16 @@ class SymbolStrategyInfo:
         self.strategy = strategy
         self.configs = configs
 
-    def update(self, state) -> None:
-        if isinstance(state, WaitToCheckAgainState):
-            if state.symbol != self.symbol or state.strategy != self.strategy.name:
-                return None
-            for config in self.configs:
-                if config.timeframe == state.timeframe:
-                    config.last_check = datetime.today()
-                    print(f"Updating SYMBOL STRATEGY INFO Last Check --- {self.symbol}")
+    def update(self, state: WaitToCheckAgainState) -> None:
+        if state.symbol != self.symbol or state.strategy != self.strategy.name:
+            return None
+
+        for config in self.configs:
+            if config.timeframe.value != state.timeframe:
+                continue
+            config.last_check = datetime.today()
+            print(f"Updating SYMBOL STRATEGY INFO Last Check --- {self.symbol}")
+        return None
 
 
 class SymbolsInfo(Observer):
@@ -61,4 +63,5 @@ class SymbolsInfo(Observer):
     def update(self, state) -> None:
         for symbol in self.info.keys():
             for info in self.info[symbol]:
+                info: SymbolStrategyInfo
                 info.update(state)
