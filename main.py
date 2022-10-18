@@ -56,6 +56,11 @@ def add_strategies(manager: strategies.Manager, s: List[strategies.Strategy]) ->
     return None
 
 
+def can_check_new_position(last_check: datetime, wait_to_check: int) -> bool:
+    minutes_awaited = (datetime.today() - last_check).seconds // 60
+    return minutes_awaited > wait_to_check
+
+
 def main(symbols_info: SymbolsInfo) -> None:
     mt5api = MetaTrader5API(delta_timezone=-6)
     mt5_connection(mt5api)
@@ -125,9 +130,9 @@ def main(symbols_info: SymbolsInfo) -> None:
                             strategy.check_protect(position, mt5api, trade_risk, dataframe)
                             strategy.check_close(position, mt5api, trade_risk, dataframe)
 
-                        # -- CHECKING THE WAITING TIME BEFORE EACH NEW POSITION CHECK
-                        check_interval_minutes = (datetime.today() - config.last_check).seconds // 60
-                        if check_interval_minutes > config.wait_to_check:
+                        # -- CHECK THE WAITING TIME INTERVAL BEFORE CHECKING THE NEW POSITION
+                        # -- PREVENTS MULTIPLE TRIES TO OPEN THE SAME POSITION
+                        if can_check_new_position(config.last_check, config.wait_to_check):
                             strategy.check_new_position(symbol, config.timeframe, dataframe, signals_results)
 
         except KeyboardInterrupt:
